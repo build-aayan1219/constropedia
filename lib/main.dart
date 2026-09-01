@@ -4,17 +4,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/signup_page.dart';
 import 'screens/login_page.dart';
+import 'screens/category_page.dart';
 
 void main() async {
-  // Make sure Flutter is initialized before Firebase
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Start the Constropedia application
   runApp(const ConstropediaApp());
 }
 
@@ -27,7 +25,6 @@ class ConstropediaApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Constropedia',
 
-      // App theme
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.orange,
@@ -35,19 +32,16 @@ class ConstropediaApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      // App routes
       routes: {
         '/signup': (context) => const SignupPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),
       },
 
-      // Starting screen
       home: const LoginPage(),
     );
   }
 }
-
 
 // ============================================================
 // HOME SCREEN
@@ -66,9 +60,12 @@ class HomeScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              // Bookmark feature will be added later
+            },
             icon: const Icon(Icons.bookmark_outline),
           ),
         ],
@@ -76,8 +73,10 @@ class HomeScreen extends StatelessWidget {
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
 
             // ==================================================
@@ -103,7 +102,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-
             // ==================================================
             // SEARCH BAR
             // ==================================================
@@ -112,6 +110,7 @@ class HomeScreen extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Search construction terms...',
                 prefixIcon: const Icon(Icons.search),
+
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -119,7 +118,6 @@ class HomeScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 25),
-
 
             // ==================================================
             // TERM OF THE DAY
@@ -138,6 +136,7 @@ class HomeScreen extends StatelessWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
+
                 child: Row(
                   children: [
 
@@ -150,7 +149,9 @@ class HomeScreen extends StatelessWidget {
 
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
                         children: const [
 
                           Text(
@@ -178,7 +179,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 25),
 
-
             // ==================================================
             // CATEGORIES
             // ==================================================
@@ -195,9 +195,14 @@ class HomeScreen extends StatelessWidget {
 
             GridView.count(
               crossAxisCount: 2,
+
               shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+
+              physics:
+                  const NeverScrollableScrollPhysics(),
+
               crossAxisSpacing: 12,
+
               mainAxisSpacing: 12,
 
               children: const [
@@ -231,7 +236,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 25),
 
-
             // ==================================================
             // QUIZ SECTION
             // ==================================================
@@ -248,7 +252,10 @@ class HomeScreen extends StatelessWidget {
 
             Card(
               child: ListTile(
-                leading: const Icon(Icons.quiz),
+
+                leading: const Icon(
+                  Icons.quiz,
+                ),
 
                 title: const Text(
                   'Take a Construction Quiz',
@@ -265,7 +272,9 @@ class HomeScreen extends StatelessWidget {
                   Icons.arrow_forward_ios,
                 ),
 
-                onTap: () {},
+                onTap: () {
+                  // Quiz feature will be added later
+                },
               ),
             ),
           ],
@@ -274,7 +283,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
 
 // ============================================================
 // CATEGORY CARD
@@ -293,13 +301,30 @@ class CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+
       child: InkWell(
+
         borderRadius: BorderRadius.circular(12),
 
-        onTap: () {},
+        onTap: () {
+
+          Navigator.push(
+            context,
+
+            MaterialPageRoute(
+              builder: (context) => CategoryPage(
+                categoryName: title,
+              ),
+            ),
+          );
+
+        },
 
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+
+          mainAxisAlignment:
+              MainAxisAlignment.center,
+
           children: [
 
             Icon(
@@ -311,7 +336,9 @@ class CategoryCard extends StatelessWidget {
 
             Text(
               title,
+
               textAlign: TextAlign.center,
+
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
