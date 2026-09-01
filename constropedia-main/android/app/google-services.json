@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "469227179625",
+    "project_id": "constropedia-7d7a3",
+    "storage_bucket": "constropedia-7d7a3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:469227179625:android:e043dfc90582e6667edcf8",
+        "android_client_info": {
+          "package_name": "com.example.constropedia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcZtBH7S_ImS4-c-aE_TN2ncovBPqSyNI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
