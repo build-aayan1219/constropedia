@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/signup_page.dart';
 import 'screens/login_page.dart';
-
+//Hi this is testing comment
 void main() async {
   // Make sure Flutter is initialized before Firebase
   WidgetsFlutterBinding.ensureInitialized();
