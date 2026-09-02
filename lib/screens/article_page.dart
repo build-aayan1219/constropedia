@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
 
-class ArticlePage extends StatelessWidget {
+class ArticlePage extends StatefulWidget {
   final String title;
   final String description;
 
@@ -9,6 +10,96 @@ class ArticlePage extends StatelessWidget {
     required this.title,
     required this.description,
   });
+
+  @override
+  State<ArticlePage> createState() => _ArticlePageState();
+}
+
+class _ArticlePageState extends State<ArticlePage> {
+  final FirestoreService _firestoreService = FirestoreService();
+
+  bool isBookmarked = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    checkBookmark();
+  }
+
+  // CHECK WHETHER ARTICLE IS ALREADY BOOKMARKED
+  Future<void> checkBookmark() async {
+    try {
+      bool result = await _firestoreService.isBookmarked(
+        title: widget.title,
+      );
+
+      if (mounted) {
+        setState(() {
+          isBookmarked = result;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('CHECK BOOKMARK ERROR: $e');
+
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  // ADD OR REMOVE BOOKMARK
+  Future<void> toggleBookmark() async {
+    try {
+      if (isBookmarked) {
+        await _firestoreService.removeBookmark(
+          title: widget.title,
+        );
+
+        if (mounted) {
+          setState(() {
+            isBookmarked = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bookmark removed'),
+            ),
+          );
+        }
+      } else {
+        await _firestoreService.addBookmark(
+          title: widget.title,
+          description: widget.description,
+        );
+
+        if (mounted) {
+          setState(() {
+            isBookmarked = true;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Article bookmarked'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('BOOKMARK ERROR: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,11 +113,10 @@ class ArticlePage extends StatelessWidget {
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-            // TITLE
+            // ARTICLE TITLE
             Text(
-              title,
+              widget.title,
               style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -47,7 +137,7 @@ class ArticlePage extends StatelessWidget {
             const SizedBox(height: 8),
 
             Text(
-              description,
+              widget.description,
               style: const TextStyle(
                 fontSize: 16,
                 height: 1.5,
@@ -105,8 +195,7 @@ class ArticlePage extends StatelessWidget {
             const SizedBox(height: 8),
 
             const Text(
-              'This material is widely used in construction '
-              'for building and structural applications.',
+              'This material is widely used in construction for building and structural applications.',
               style: TextStyle(
                 fontSize: 16,
                 height: 1.5,
@@ -118,22 +207,19 @@ class ArticlePage extends StatelessWidget {
             // BOOKMARK BUTTON
             SizedBox(
               width: double.infinity,
-
               child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Bookmark feature coming soon'),
-                    ),
-                  );
-                },
+                onPressed: isLoading ? null : toggleBookmark,
 
-                icon: const Icon(
-                  Icons.bookmark_outline,
+                icon: Icon(
+                  isBookmarked
+                      ? Icons.bookmark
+                      : Icons.bookmark_outline,
                 ),
 
-                label: const Text(
-                  'Bookmark',
+                label: Text(
+                  isBookmarked
+                      ? 'Remove Bookmark'
+                      : 'Bookmark',
                 ),
               ),
             ),
