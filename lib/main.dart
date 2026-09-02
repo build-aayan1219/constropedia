@@ -4,14 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/signup_page.dart';
 import 'screens/login_page.dart';
-<<<<<<< HEAD
-//Hi this is testing comment
-=======
 import 'screens/category_page.dart';
 import 'screens/search_page.dart';
 import 'screens/bookmarks_page.dart';
+import 'screens/quiz_page.dart';
 
->>>>>>> 352ebb91078356eb48e4abe2535d3bdb7dffea72
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -30,17 +27,20 @@ class ConstropediaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Constropedia',
+
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.orange,
         ),
         useMaterial3: true,
       ),
+
       routes: {
         '/signup': (context) => const SignupPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),
       },
+
       home: const LoginPage(),
     );
   }
@@ -60,6 +60,7 @@ class HomeScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+
         actions: [
           IconButton(
             onPressed: () {
@@ -70,15 +71,21 @@ class HomeScreen extends StatelessWidget {
                 ),
               );
             },
-            icon: const Icon(Icons.bookmark_outline),
+
+            icon: const Icon(
+              Icons.bookmark_outline,
+            ),
           ),
         ],
       ),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
           children: [
             const Text(
               'Welcome to Constropedia 👋',
@@ -102,19 +109,28 @@ class HomeScreen extends StatelessWidget {
             // SEARCH
             TextField(
               readOnly: true,
+
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const SearchPage(),
+                    builder: (context) =>
+                        const SearchPage(),
                   ),
                 );
               },
+
               decoration: InputDecoration(
-                hintText: 'Search construction terms...',
-                prefixIcon: const Icon(Icons.search),
+                hintText:
+                    'Search construction terms...',
+
+                prefixIcon: const Icon(
+                  Icons.search,
+                ),
+
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius:
+                      BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -134,7 +150,9 @@ class HomeScreen extends StatelessWidget {
 
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding:
+                    const EdgeInsets.all(16),
+
                 child: Row(
                   children: [
                     const Icon(
@@ -148,12 +166,14 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment:
                             CrossAxisAlignment.start,
+
                         children: const [
                           Text(
                             'Reinforced Concrete',
                             style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontWeight:
+                                  FontWeight.bold,
                             ),
                           ),
 
@@ -162,7 +182,8 @@ class HomeScreen extends StatelessWidget {
                           Text(
                             'Concrete strengthened using steel reinforcement.',
                             maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            overflow:
+                                TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -188,10 +209,13 @@ class HomeScreen extends StatelessWidget {
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
+
               physics:
                   const NeverScrollableScrollPhysics(),
+
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
+
               children: const [
                 CategoryCard(
                   title: 'Materials',
@@ -210,7 +234,8 @@ class HomeScreen extends StatelessWidget {
 
                 CategoryCard(
                   title: 'Site Safety',
-                  icon: Icons.health_and_safety,
+                  icon:
+                      Icons.health_and_safety,
                 ),
 
                 CategoryCard(
@@ -235,7 +260,9 @@ class HomeScreen extends StatelessWidget {
 
             Card(
               child: ListTile(
-                leading: const Icon(Icons.quiz),
+                leading: const Icon(
+                  Icons.quiz,
+                ),
 
                 title: const Text(
                   'Take a Construction Quiz',
@@ -252,7 +279,15 @@ class HomeScreen extends StatelessWidget {
                   Icons.arrow_forward_ios,
                 ),
 
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const QuizPage(),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -277,7 +312,8 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius:
+            BorderRadius.circular(12),
 
         onTap: () {
           Navigator.push(
@@ -305,6 +341,7 @@ class CategoryCard extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
+
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
