@@ -4,10 +4,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/signup_page.dart';
 import 'screens/login_page.dart';
+<<<<<<< HEAD
+//Hi this is testing comment
+=======
 import 'screens/category_page.dart';
 import 'screens/search_page.dart';
 import 'screens/bookmarks_page.dart';
 
+>>>>>>> 352ebb91078356eb48e4abe2535d3bdb7dffea72
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
