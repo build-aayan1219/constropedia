@@ -26,6 +26,10 @@ class _ArticlePageState extends State<ArticlePage> {
     checkBookmark();
   }
 
+  // --------------------------------------------------
+  // CHECK BOOKMARK
+  // --------------------------------------------------
+
   Future<void> checkBookmark() async {
     try {
       final bookmarked = await _firestoreService.isBookmarked(
@@ -48,6 +52,10 @@ class _ArticlePageState extends State<ArticlePage> {
       debugPrint('Error checking bookmark: $e');
     }
   }
+
+  // --------------------------------------------------
+  // TOGGLE BOOKMARK
+  // --------------------------------------------------
 
   Future<void> toggleBookmark() async {
     if (isLoading) return;
@@ -105,13 +113,19 @@ class _ArticlePageState extends State<ArticlePage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Something went wrong. Please try again.'),
+          content: Text(
+            'Something went wrong. Please try again.',
+          ),
         ),
       );
 
       debugPrint('Bookmark error: $e');
     }
   }
+
+  // --------------------------------------------------
+  // KEY POINT CARD
+  // --------------------------------------------------
 
   Widget _buildPoint(String text) {
     return Container(
@@ -154,6 +168,106 @@ class _ArticlePageState extends State<ArticlePage> {
     );
   }
 
+  // --------------------------------------------------
+  // ARTICLE IMAGE
+  // --------------------------------------------------
+
+  Widget _buildArticleImage() {
+    final imageUrl = widget.article.imageUrl;
+
+    // No image URL
+    if (imageUrl == null || imageUrl.trim().isEmpty) {
+      return Container(
+        width: double.infinity,
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_outlined,
+              size: 55,
+              color: Colors.orange.shade300,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'No image available',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Image URL exists
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Image.network(
+        imageUrl,
+        width: double.infinity,
+        height: 220,
+        fit: BoxFit.cover,
+        loadingBuilder: (
+          BuildContext context,
+          Widget child,
+          ImageChunkEvent? loadingProgress,
+        ) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return Container(
+            width: double.infinity,
+            height: 220,
+            color: Colors.orange.shade50,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        },
+        errorBuilder: (
+          BuildContext context,
+          Object error,
+          StackTrace? stackTrace,
+        ) {
+          return Container(
+            width: double.infinity,
+            height: 220,
+            color: Colors.orange.shade50,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.broken_image_outlined,
+                  size: 55,
+                  color: Colors.orange.shade300,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Unable to load image',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // BUILD
+  // --------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final article = widget.article;
@@ -180,12 +294,23 @@ class _ArticlePageState extends State<ArticlePage> {
           ),
         ],
       ),
+
+      // --------------------------------------------------
+      // ARTICLE BODY
+      // --------------------------------------------------
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Article Header
+
+            // IMAGE
+            _buildArticleImage(),
+
+            const SizedBox(height: 18),
+
+            // ARTICLE HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -234,7 +359,10 @@ class _ArticlePageState extends State<ArticlePage> {
 
             const SizedBox(height: 20),
 
-            // Definition
+            // --------------------------------------------------
+            // DEFINITION
+            // --------------------------------------------------
+
             const Text(
               'Definition',
               style: TextStyle(
@@ -265,7 +393,10 @@ class _ArticlePageState extends State<ArticlePage> {
 
             const SizedBox(height: 24),
 
-            // Content
+            // --------------------------------------------------
+            // CONTENT
+            // --------------------------------------------------
+
             const Text(
               'Content',
               style: TextStyle(
@@ -285,7 +416,9 @@ class _ArticlePageState extends State<ArticlePage> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  article.content,
+                  article.content.isNotEmpty
+                      ? article.content
+                      : 'No content available for this article.',
                   style: const TextStyle(
                     fontSize: 15,
                     height: 1.7,
@@ -296,7 +429,10 @@ class _ArticlePageState extends State<ArticlePage> {
 
             const SizedBox(height: 24),
 
-            // Key Points
+            // --------------------------------------------------
+            // KEY POINTS
+            // --------------------------------------------------
+
             const Text(
               'Key Points',
               style: TextStyle(
@@ -321,7 +457,10 @@ class _ArticlePageState extends State<ArticlePage> {
 
             const SizedBox(height: 14),
 
-            // Bookmark Button
+            // --------------------------------------------------
+            // BOOKMARK BUTTON
+            // --------------------------------------------------
+
             SizedBox(
               width: double.infinity,
               height: 52,
