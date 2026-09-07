@@ -78,6 +78,9 @@ class _ArticlePageState extends State<ArticlePage> {
         await _firestoreService.addBookmark(
           title: widget.article.title,
           description: widget.article.description,
+          content: widget.article.content,
+          category: widget.article.category,
+          imageUrl: widget.article.imageUrl,
         );
 
         if (!mounted) return;
