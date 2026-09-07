@@ -105,25 +105,81 @@ class _ArticlePageState extends State<ArticlePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Article'),
+        title: const Text(
+          'Article',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: isLoading ? null : toggleBookmark,
+            icon: Icon(
+              isBookmarked
+                  ? Icons.bookmark
+                  : Icons.bookmark_outline,
+            ),
+            tooltip: isBookmarked
+                ? 'Remove Bookmark'
+                : 'Bookmark',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
-            // ARTICLE TITLE
-            Text(
-              widget.title,
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
+            // ARTICLE HEADER
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.orange.shade100,
+                ),
+              ),
+
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+
+                    child: const Icon(
+                      Icons.menu_book,
+                      size: 30,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
 
             // DEFINITION
             const Text(
@@ -134,17 +190,31 @@ class _ArticlePageState extends State<ArticlePage> {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
-            Text(
-              widget.description,
-              style: const TextStyle(
-                fontSize: 16,
-                height: 1.5,
+            Card(
+              elevation: 1,
+              margin: EdgeInsets.zero,
+
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+
+                child: Text(
+                  widget.description,
+                  style: TextStyle(
+                    fontSize: 16,
+                    height: 1.6,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
               ),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 28),
 
             // KEY POINTS
             const Text(
@@ -155,33 +225,21 @@ class _ArticlePageState extends State<ArticlePage> {
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-            const Text(
-              '• Commonly used in construction projects.',
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.6,
-              ),
+            _buildPoint(
+              'Commonly used in construction projects.',
             ),
 
-            const Text(
-              '• Available in different types and grades.',
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.6,
-              ),
+            _buildPoint(
+              'Available in different types and grades.',
             ),
 
-            const Text(
-              '• Proper handling and storage is important.',
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.6,
-              ),
+            _buildPoint(
+              'Proper handling and storage is important.',
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 28),
 
             // USES
             const Text(
@@ -192,13 +250,27 @@ class _ArticlePageState extends State<ArticlePage> {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
-            const Text(
-              'This material is widely used in construction for building and structural applications.',
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.5,
+            Card(
+              elevation: 1,
+              margin: EdgeInsets.zero,
+
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+
+                child: Text(
+                  'This material is widely used in construction for building and structural applications.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    height: 1.6,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
               ),
             ),
 
@@ -207,6 +279,8 @@ class _ArticlePageState extends State<ArticlePage> {
             // BOOKMARK BUTTON
             SizedBox(
               width: double.infinity,
+              height: 52,
+
               child: ElevatedButton.icon(
                 onPressed: isLoading ? null : toggleBookmark,
 
@@ -219,11 +293,76 @@ class _ArticlePageState extends State<ArticlePage> {
                 label: Text(
                   isBookmarked
                       ? 'Remove Bookmark'
-                      : 'Bookmark',
+                      : 'Bookmark Article',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // REUSABLE KEY POINT WIDGET
+  Widget _buildPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+
+      child: Card(
+        elevation: 1,
+        margin: EdgeInsets.zero,
+
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+
+                padding: const EdgeInsets.all(5),
+
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  shape: BoxShape.circle,
+                ),
+
+                child: const Icon(
+                  Icons.check,
+                  size: 15,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
