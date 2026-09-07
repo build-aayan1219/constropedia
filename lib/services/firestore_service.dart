@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/article.dart';
+
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -37,6 +39,48 @@ class FirestoreService {
         .collection('users')
         .doc(user.uid)
         .get();
+  }
+
+  // --------------------------------------------------
+  // ARTICLES
+  // --------------------------------------------------
+
+  /// Get all articles from Firestore
+  Stream<List<Article>> getArticles() {
+    return _firestore
+        .collection('articles')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => Article.fromMap(
+                  doc.id,
+                  doc.data(),
+                ),
+              )
+              .toList(),
+        );
+  }
+
+  /// Get articles belonging to a particular category
+  Stream<List<Article>> getArticlesByCategory(
+    String category,
+  ) {
+    return _firestore
+        .collection('articles')
+        .where('category', isEqualTo: category)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => Article.fromMap(
+                  doc.id,
+                  doc.data(),
+                ),
+              )
+              .toList(),
+        );
   }
 
   // --------------------------------------------------
