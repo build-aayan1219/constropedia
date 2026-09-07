@@ -2,40 +2,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final FirebaseAuth _auth =
-      FirebaseAuth.instance;
+  // --------------------------------------------------
+  // USER PROFILE
+  // --------------------------------------------------
 
-  // CREATE USER PROFILE
   Future<void> createUserProfile({
     required String name,
     required String email,
   }) async {
-    User? user = _auth.currentUser;
+    final user = _auth.currentUser;
 
     if (user == null) {
-      throw Exception('No user is currently logged in.');
+      throw Exception('User is not logged in');
     }
 
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .set({
+    await _firestore.collection('users').doc(user.uid).set({
       'name': name,
       'email': email,
-      'role': 'user',
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  // GET USER PROFILE
-  Future<DocumentSnapshot> getUserProfile() async {
-    User? user = _auth.currentUser;
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserProfile() async {
+    final user = _auth.currentUser;
 
     if (user == null) {
-      throw Exception('No user is currently logged in.');
+      throw Exception('User is not logged in');
     }
 
     return await _firestore
@@ -44,15 +39,21 @@ class FirestoreService {
         .get();
   }
 
-  // ADD BOOKMARK
+  // --------------------------------------------------
+  // BOOKMARKS
+  // --------------------------------------------------
+
   Future<void> addBookmark({
     required String title,
     required String description,
+    required String content,
+    required String category,
+    String? imageUrl,
   }) async {
-    User? user = _auth.currentUser;
+    final user = _auth.currentUser;
 
     if (user == null) {
-      throw Exception('No user is currently logged in.');
+      throw Exception('User is not logged in');
     }
 
     await _firestore
@@ -63,18 +64,20 @@ class FirestoreService {
         .set({
       'title': title,
       'description': description,
+      'content': content,
+      'category': category,
+      'imageUrl': imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  // REMOVE BOOKMARK
   Future<void> removeBookmark({
     required String title,
   }) async {
-    User? user = _auth.currentUser;
+    final user = _auth.currentUser;
 
     if (user == null) {
-      throw Exception('No user is currently logged in.');
+      throw Exception('User is not logged in');
     }
 
     await _firestore
@@ -85,32 +88,30 @@ class FirestoreService {
         .delete();
   }
 
-  // CHECK IF ARTICLE IS BOOKMARKED
   Future<bool> isBookmarked({
     required String title,
   }) async {
-    User? user = _auth.currentUser;
+    final user = _auth.currentUser;
 
     if (user == null) {
       return false;
     }
 
-    DocumentSnapshot bookmark = await _firestore
+    final document = await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('bookmarks')
         .doc(title)
         .get();
 
-    return bookmark.exists;
+    return document.exists;
   }
 
-  // GET ALL BOOKMARKS
-  Stream<QuerySnapshot> getBookmarks() {
-    User? user = _auth.currentUser;
+  Stream<List<Map<String, dynamic>>> getBookmarks() {
+    final user = _auth.currentUser;
 
     if (user == null) {
-      return const Stream.empty();
+      return Stream.value([]);
     }
 
     return _firestore
@@ -118,6 +119,16 @@ class FirestoreService {
         .doc(user.uid)
         .collection('bookmarks')
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => {
+                  'id': doc.id,
+                  ...doc.data(),
+                },
+              )
+              .toList(),
+        );
   }
 }
