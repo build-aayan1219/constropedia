@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/article.dart';
 import 'article_page.dart';
 
 class SearchPage extends StatefulWidget {
@@ -11,37 +12,55 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController searchController = TextEditingController();
 
-  // Temporary article data.
-  // This will later be replaced with Firestore data.
-  final List<Map<String, String>> articles = [
-    {
-      'title': 'Cement',
-      'description':
-          'Cement is a binding material commonly used in construction.',
-    },
-    {
-      'title': 'Concrete',
-      'description':
-          'Concrete is a construction material made using cement, water and aggregates.',
-    },
-    {
-      'title': 'Bricks',
-      'description':
-          'Bricks are commonly used building units made from materials such as clay.',
-    },
-    {
-      'title': 'Steel',
-      'description':
-          'Steel is a strong construction material commonly used for structural purposes.',
-    },
-    {
-      'title': 'Foundation',
-      'description':
-          'A foundation transfers the load of a building safely to the ground.',
-    },
+  final List<Article> articles = [
+    Article(
+      id: 'cement',
+      title: 'Cement',
+      description:
+          'A binding material used in construction to hold other materials together.',
+      content:
+          'Cement is one of the most important materials used in construction.',
+      category: 'Materials',
+    ),
+    Article(
+      id: 'concrete',
+      title: 'Concrete',
+      description:
+          'A composite construction material made using cement, aggregates, and water.',
+      content:
+          'Concrete is widely used for foundations, columns, beams, slabs, and other structural elements.',
+      category: 'Materials',
+    ),
+    Article(
+      id: 'bricks',
+      title: 'Bricks',
+      description:
+          'Small masonry units commonly used for walls and other construction work.',
+      content:
+          'Bricks are commonly used to construct walls, partitions, and other masonry structures.',
+      category: 'Materials',
+    ),
+    Article(
+      id: 'steel',
+      title: 'Steel',
+      description:
+          'A strong construction material commonly used for reinforcement and structural frameworks.',
+      content:
+          'Steel is widely used in construction because of its high strength and durability.',
+      category: 'Structural',
+    ),
+    Article(
+      id: 'foundation',
+      title: 'Foundation',
+      description:
+          'The structural base of a building that transfers loads safely to the ground.',
+      content:
+          'A foundation provides stability to a structure by transferring its loads to the soil.',
+      category: 'Structural',
+    ),
   ];
 
-  List<Map<String, String>> searchResults = [];
+  List<Article> searchResults = [];
 
   @override
   void initState() {
@@ -49,33 +68,35 @@ class _SearchPageState extends State<SearchPage> {
     searchResults = articles;
   }
 
-  // Search articles by TITLE only.
-  void searchArticles(String query) {
-    setState(() {
-      final searchText = query.trim().toLowerCase();
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
+  void searchArticles(String query) {
+    final searchText = query.trim().toLowerCase();
+
+    setState(() {
       if (searchText.isEmpty) {
         searchResults = articles;
       } else {
         searchResults = articles.where((article) {
-          final title = article['title']!.toLowerCase();
+          final title = article.title.toLowerCase();
 
+          // Search only by article title.
           return title.contains(searchText);
         }).toList();
       }
     });
   }
 
-  // Clear the search field.
   void clearSearch() {
     searchController.clear();
-    searchArticles('');
-  }
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
+    setState(() {
+      searchResults = articles;
+    });
   }
 
   @override
@@ -89,44 +110,29 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-            // SEARCH BAR
             TextField(
               controller: searchController,
               onChanged: searchArticles,
-
               decoration: InputDecoration(
                 hintText: 'Search construction terms...',
-                prefixIcon: const Icon(Icons.search),
-
+                prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
+                        icon: const Icon(Icons.clear_rounded),
                         onPressed: clearSearch,
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Clear search',
                       )
                     : null,
-
                 filled: true,
                 fillColor: Colors.grey.shade100,
-
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
-
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
@@ -139,31 +145,30 @@ class _SearchPageState extends State<SearchPage> {
 
             const SizedBox(height: 24),
 
-            // RESULTS TITLE
             Text(
-              searchController.text.isEmpty
-                  ? 'All Articles'
-                  : 'Search Results',
-
+              'Search Results',
               style: const TextStyle(
-                fontSize: 21,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
             const SizedBox(height: 12),
 
-            // SEARCH RESULTS
             Expanded(
               child: searchResults.isEmpty
                   ? _buildEmptyState()
-                  : ListView.builder(
+                  : ListView.separated(
                       itemCount: searchResults.length,
-
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final article = searchResults[index];
 
-                        return _buildArticleCard(article);
+                        return _buildArticleCard(
+                          context,
+                          article,
+                        );
                       },
                     ),
             ),
@@ -173,88 +178,98 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  // Article result card.
-  Widget _buildArticleCard(Map<String, String> article) {
+  Widget _buildArticleCard(
+    BuildContext context,
+    Article article,
+  ) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-
-          decoration: BoxDecoration(
-            color: Colors.orange.shade100,
-            borderRadius: BorderRadius.circular(12),
-          ),
-
-          child: const Icon(
-            Icons.menu_book,
-            size: 26,
-          ),
-        ),
-
-        title: Text(
-          article['title']!,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Text(
-            article['description']!,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-        ),
-
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ArticlePage(
-                title: article['title']!,
-                description: article['description']!,
+                article: article,
               ),
             ),
           );
         },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 28,
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      article.title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      article.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // Empty search result UI.
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-
         children: [
           Icon(
-            Icons.search_off,
-            size: 60,
+            Icons.search_off_rounded,
+            size: 64,
             color: Colors.grey.shade400,
           ),
-
-          const SizedBox(height: 12),
-
+          const SizedBox(height: 16),
           const Text(
             'No articles found',
             style: TextStyle(
@@ -262,9 +277,7 @@ class _SearchPageState extends State<SearchPage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-
           const SizedBox(height: 6),
-
           Text(
             'Try searching for another construction term.',
             style: TextStyle(
