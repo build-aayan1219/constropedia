@@ -1,88 +1,221 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../models/article.dart';
 import '../services/firestore_service.dart';
 import 'article_page.dart';
 
 class BookmarksPage extends StatelessWidget {
-  BookmarksPage({super.key});
-
-  final FirestoreService _firestoreService = FirestoreService();
+  const BookmarksPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final FirestoreService firestoreService = FirestoreService();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bookmarks'),
+        title: const Text(
+          'Bookmarks',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _firestoreService.getBookmarks(),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: firestoreService.getBookmarks(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
+          // Loading state
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
 
+          // Error state
           if (snapshot.hasError) {
-            return const Center(
-              child: Text('Something went wrong.'),
-            );
-          }
-
-          if (!snapshot.hasData ||
-              snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text(
-                'No bookmarks yet.',
-                style: TextStyle(fontSize: 16),
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 60,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Unable to load bookmarks',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please check your connection and try again.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
-          final bookmarks = snapshot.data!.docs;
+          final List<Map<String, dynamic>> bookmarks =
+              snapshot.data ?? [];
 
-          return ListView.builder(
+          // Empty state
+          if (bookmarks.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          // Bookmark list
+          return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: bookmarks.length,
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final bookmark =
-                  bookmarks[index].data()
-                      as Map<String, dynamic>;
+              final bookmark = bookmarks[index];
 
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.bookmark),
-                  title: Text(
-                    bookmark['title'] ?? '',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: Text(
-                    bookmark['description'] ?? '',
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios,
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ArticlePage(
-                          title: bookmark['title'] ?? '',
-                          description:
-                              bookmark['description'] ?? '',
-                        ),
-                      ),
-                    );
-                  },
-                ),
+              final Article article = Article(
+                id: bookmark['id'] ?? '',
+                title: bookmark['title'] ?? '',
+                description: bookmark['description'] ?? '',
+                content: bookmark['content'] ?? '',
+                category: bookmark['category'] ?? '',
+                imageUrl: bookmark['imageUrl'],
+              );
+
+              return _buildBookmarkCard(
+                context,
+                article,
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildBookmarkCard(
+    BuildContext context,
+    Article article,
+  ) {
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ArticlePage(
+                article: article,
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.bookmark_rounded,
+                  size: 28,
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      article.title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      article.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.bookmark_border_rounded,
+              size: 70,
+              color: Colors.grey.shade400,
+            ),
+
+            const SizedBox(height: 16),
+
+            const Text(
+              'No Bookmarks Yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Save articles you want to read later.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
