@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../models/article.dart';
+import '../services/firestore_service.dart';
 import 'article_page.dart';
 
 class SearchPage extends StatefulWidget {
@@ -10,63 +12,12 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final TextEditingController searchController = TextEditingController();
+  final TextEditingController searchController =
+      TextEditingController();
 
-  final List<Article> articles = [
-    Article(
-      id: 'cement',
-      title: 'Cement',
-      description:
-          'A binding material used in construction to hold other materials together.',
-      content:
-          'Cement is one of the most important materials used in construction.',
-      category: 'Materials',
-    ),
-    Article(
-      id: 'concrete',
-      title: 'Concrete',
-      description:
-          'A composite construction material made using cement, aggregates, and water.',
-      content:
-          'Concrete is widely used for foundations, columns, beams, slabs, and other structural elements.',
-      category: 'Materials',
-    ),
-    Article(
-      id: 'bricks',
-      title: 'Bricks',
-      description:
-          'Small masonry units commonly used for walls and other construction work.',
-      content:
-          'Bricks are commonly used to construct walls, partitions, and other masonry structures.',
-      category: 'Materials',
-    ),
-    Article(
-      id: 'steel',
-      title: 'Steel',
-      description:
-          'A strong construction material commonly used for reinforcement and structural frameworks.',
-      content:
-          'Steel is widely used in construction because of its high strength and durability.',
-      category: 'Structural',
-    ),
-    Article(
-      id: 'foundation',
-      title: 'Foundation',
-      description:
-          'The structural base of a building that transfers loads safely to the ground.',
-      content:
-          'A foundation provides stability to a structure by transferring its loads to the soil.',
-      category: 'Structural',
-    ),
-  ];
+  final FirestoreService firestoreService = FirestoreService();
 
-  List<Article> searchResults = [];
-
-  @override
-  void initState() {
-    super.initState();
-    searchResults = articles;
-  }
+  String searchText = '';
 
   @override
   void dispose() {
@@ -74,28 +25,9 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
-  void searchArticles(String query) {
-    final searchText = query.trim().toLowerCase();
-
+  void performSearch(String value) {
     setState(() {
-      if (searchText.isEmpty) {
-        searchResults = articles;
-      } else {
-        searchResults = articles.where((article) {
-          final title = article.title.toLowerCase();
-
-          // Search only by article title.
-          return title.contains(searchText);
-        }).toList();
-      }
-    });
-  }
-
-  void clearSearch() {
-    searchController.clear();
-
-    setState(() {
-      searchResults = articles;
+      searchText = value.trim().toLowerCase();
     });
   }
 
@@ -104,27 +36,46 @@ class _SearchPageState extends State<SearchPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Search',
+          'Search Articles',
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
+      body: Column(
+        children: [
+          // --------------------------------------------------
+          // SEARCH BAR
+          // --------------------------------------------------
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              10,
+            ),
+            child: TextField(
               controller: searchController,
-              onChanged: searchArticles,
+              onChanged: performSearch,
               decoration: InputDecoration(
-                hintText: 'Search construction terms...',
-                prefixIcon: const Icon(Icons.search_rounded),
+                hintText: 'Search articles...',
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                ),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: clearSearch,
+                        tooltip: 'Clear',
+                        onPressed: () {
+                          searchController.clear();
+
+                          setState(() {
+                            searchText = '';
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                        ),
                       )
                     : null,
                 filled: true,
@@ -142,148 +93,233 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
             ),
+          ),
 
-            const SizedBox(height: 24),
+          // --------------------------------------------------
+          // ARTICLES
+          // --------------------------------------------------
 
-            Text(
-              'Search Results',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          Expanded(
+            child: StreamBuilder<List<Article>>(
+              stream: firestoreService.getArticles(),
+              builder: (context, snapshot) {
+                // Loading
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
 
-            const SizedBox(height: 12),
-
-            Expanded(
-              child: searchResults.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                      itemCount: searchResults.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final article = searchResults[index];
-
-                        return _buildArticleCard(
-                          context,
-                          article,
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildArticleCard(
-    BuildContext context,
-    Article article,
-  ) {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ArticlePage(
-                article: article,
-              ),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.menu_book_rounded,
-                  size: 28,
-                ),
-              ),
-
-              const SizedBox(width: 16),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      article.title,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
+                // Error
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            size: 55,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Unable to load articles',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Please check your internet connection and try again.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  );
+                }
 
-                    const SizedBox(height: 6),
+                final articles = snapshot.data ?? [];
 
-                    Text(
-                      article.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey,
-                        height: 1.4,
+                // Title-only search
+                final searchResults = searchText.isEmpty
+                    ? articles
+                    : articles.where((article) {
+                        final title =
+                            article.title.toLowerCase();
+
+                        return title.contains(searchText);
+                      }).toList();
+
+                // No results
+                if (searchResults.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off_rounded,
+                            size: 65,
+                            color: Colors.orange.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No articles found',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Try searching with a different article title.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  );
+                }
 
-              const SizedBox(width: 8),
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    6,
+                    16,
+                    16,
+                  ),
+                  itemCount: searchResults.length,
+                  itemBuilder: (context, index) {
+                    final article = searchResults[index];
 
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(
+                        bottom: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ArticlePage(
+                                article: article,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding:
+                                    const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade100,
+                                  borderRadius:
+                                      BorderRadius.circular(14),
+                                ),
+                                child: const Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 28,
+                                ),
+                              ),
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off_rounded,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'No articles found',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+                              const SizedBox(width: 14),
+
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      article.title,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight:
+                                            FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    Text(
+                                      article.description,
+                                      maxLines: 3,
+                                      overflow:
+                                          TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.4,
+                                        color:
+                                            Colors.grey.shade700,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.category_outlined,
+                                          size: 15,
+                                          color: Colors
+                                              .orange.shade800,
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          article.category,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight:
+                                                FontWeight.w600,
+                                            color: Colors
+                                                .orange.shade800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(width: 8),
+
+                              const Icon(
+                                Icons
+                                    .arrow_forward_ios_rounded,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Try searching for another construction term.',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
