@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/article.dart';
 import 'article_page.dart';
 
 class CategoryPage extends StatelessWidget {
@@ -8,6 +9,43 @@ class CategoryPage extends StatelessWidget {
     super.key,
     required this.categoryName,
   });
+
+  // Temporary local data.
+  // Later this will come from Firestore.
+  List<Article> get articles {
+    return [
+      Article(
+        id: 'cement',
+        title: 'Cement',
+        description:
+            'A binding material used in construction to hold other materials together.',
+        content:
+            'Cement is one of the most important materials used in construction. '
+            'It is commonly mixed with water, sand, and aggregates to produce concrete and mortar.',
+        category: 'Materials',
+      ),
+      Article(
+        id: 'concrete',
+        title: 'Concrete',
+        description:
+            'A composite construction material made using cement, aggregates, and water.',
+        content:
+            'Concrete is widely used for foundations, columns, beams, slabs, and other structural elements. '
+            'Its strength and durability make it one of the most commonly used construction materials.',
+        category: 'Materials',
+      ),
+      Article(
+        id: 'bricks',
+        title: 'Bricks',
+        description:
+            'Small masonry units commonly used for walls and other construction work.',
+        content:
+            'Bricks are commonly used to construct walls, partitions, and other masonry structures. '
+            'They are available in different sizes, types, and strengths depending on their application.',
+        category: 'Materials',
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,136 +58,98 @@ class CategoryPage extends StatelessWidget {
           ),
         ),
       ),
-
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-
-        children: [
-          // PAGE HEADING
-          Text(
-            '$categoryName Articles',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$categoryName Articles',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
 
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
 
-          Text(
-            'Explore construction terms and concepts.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
+            const Text(
+              'Explore construction terms and concepts.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
             ),
-          ),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // CEMENT
-          _buildArticleCard(
-            context: context,
-            title: 'Cement',
-            description:
-                'Learn about cement and its uses in construction.',
-            icon: Icons.inventory_2_outlined,
-            articleDescription:
-                'Cement is a binding material commonly used in construction. '
-                'It is mixed with water and other materials to produce '
-                'concrete and mortar.',
-          ),
+            Expanded(
+              child: ListView.separated(
+                itemCount: articles.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final article = articles[index];
 
-          // CONCRETE
-          _buildArticleCard(
-            context: context,
-            title: 'Concrete',
-            description:
-                'Learn about concrete and its applications.',
-            icon: Icons.foundation_outlined,
-            articleDescription:
-                'Concrete is a construction material made by combining '
-                'cement, water and aggregates. It is widely used for '
-                'buildings, roads and other structures.',
-          ),
-
-          // BRICKS
-          _buildArticleCard(
-            context: context,
-            title: 'Bricks',
-            description:
-                'Learn about bricks and their use in construction.',
-            icon: Icons.domain_outlined,
-            articleDescription:
-                'Bricks are commonly used building units made from '
-                'materials such as clay. They are used for walls, '
-                'partitions and other construction applications.',
-          ),
-        ],
+                  return _buildArticleCard(
+                    context,
+                    article,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ARTICLE CARD
-  Widget _buildArticleCard({
-    required BuildContext context,
-    required String title,
-    required String description,
-    required IconData icon,
-    required String articleDescription,
-  }) {
+  Widget _buildArticleCard(
+    BuildContext context,
+    Article article,
+  ) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 14),
-
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ArticlePage(
-                title: title,
-                description: articleDescription,
+                article: article,
               ),
             ),
           );
         },
-
         child: Padding(
           padding: const EdgeInsets.all(16),
-
           child: Row(
             children: [
-              // ARTICLE ICON
               Container(
                 padding: const EdgeInsets.all(12),
-
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
                   borderRadius: BorderRadius.circular(14),
                 ),
-
-                child: Icon(
-                  icon,
+                child: const Icon(
+                  Icons.menu_book_rounded,
                   size: 28,
                 ),
               ),
 
               const SizedBox(width: 16),
 
-              // ARTICLE INFORMATION
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     Text(
-                      title,
+                      article.title,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -159,11 +159,13 @@ class CategoryPage extends StatelessWidget {
                     const SizedBox(height: 6),
 
                     Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
-                        height: 1.3,
+                      article.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -172,11 +174,9 @@ class CategoryPage extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              // ARROW
-              Icon(
-                Icons.arrow_forward_ios,
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: Colors.grey.shade600,
               ),
             ],
           ),
