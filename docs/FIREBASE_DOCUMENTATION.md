@@ -101,6 +101,20 @@ Firestore
 * `imageUrl` (`String?`): Direct HTTP/HTTPS or Storage URL to the article image.
 * `createdAt` (`Timestamp`): Server timestamp when the article was created.
 
+#### `articles/{articleId}/mixtureData/{recordId}` (e.g., `articles/cement/mixtureData/record001` ... `record1030`)
+* Document ID (`recordId`): Formatted deterministically as `record001` through `record1030`.
+* `recordId` (`String`): Unique record identifier matching the document key.
+* `cement` (`double`): Amount of cement in the mixture (Unit: `kg/m³`).
+* `blastFurnaceSlag` (`double`): Amount of blast furnace slag (Unit: `kg/m³`).
+* `flyAsh` (`double`): Amount of fly ash (Unit: `kg/m³`).
+* `water` (`double`): Amount of water (Unit: `kg/m³`).
+* `superplasticizer` (`double`): Amount of superplasticizer admixture (Unit: `kg/m³`).
+* `coarseAggregate` (`double`): Amount of coarse aggregate gravel/stone (Unit: `kg/m³`).
+* `fineAggregate` (`double`): Amount of fine aggregate sand (Unit: `kg/m³`).
+* `age` (`int`): Curing period before testing (Unit: `days`).
+* `compressiveStrength` (`double`): Compressive strength result (Unit: `MPa`).
+* `createdAt` (`Timestamp`): Server timestamp when imported into Firestore.
+
 #### `quizQuestions/{questionId}`
 * `question` (`String`): The question text.
 * `options` (`List<String>`): Array of 4 selectable answer choices.
@@ -145,6 +159,14 @@ Located in [`lib/services/firestore_service.dart`](file:///c:/Projects/constrope
 * `Future<List<QuizQuestionModel>> fetchQuizQuestions(String category)`
   Fetches quiz questions for a category from Firestore with graceful fallback to local data.
 
+### Concrete Mixture Data
+* `Future<ConcreteMixtureRecord?> getSampleMixtureRecord({String articleId = 'cement'})`
+  Retrieves a single sample mixture record from `articles/{articleId}/mixtureData/record001` to display real components dynamically on the material article screen.
+* `Future<List<ConcreteMixtureRecord>> getCementMixtureData({int limit = 20, DocumentSnapshot? startAfter, String articleId = 'cement'})`
+  Fetches paginated concrete mixture records ordered by `recordId` ascending.
+* `Future<QuerySnapshot<Map<String, dynamic>>> getMixtureDataSnapshot({int limit = 20, DocumentSnapshot? startAfter, String articleId = 'cement'})`
+  Retrieves a raw `QuerySnapshot` for cursor-based pagination in `CementMixtureDataPage`.
+
 ### Data Seeding Helper
 * `Future<void> seedInitialDataIfNeeded()`
   Checks if `articles` collection is empty; if so, populates initial high-quality articles across all five construction categories.
@@ -158,6 +180,8 @@ Located in [`lib/services/firestore_service.dart`](file:///c:/Projects/constrope
   Enforces `request.auth != null && request.auth.uid == userId`. Users cannot read or write another user's profile or bookmarks. Unauthenticated requests are completely blocked.
 * **Articles (`articles/{articleId}`)**:
   `allow read: if true;` (public read-only). Normal clients cannot write (`allow write: if false;`).
+* **Concrete Mixture Subcollection (`articles/{articleId}/mixtureData/{recordId}`)**:
+  `allow read: if true;` (public read-only). Normal clients cannot alter or inject mixture dataset records (`allow write: if false;`).
 * **Quiz Questions (`quizQuestions/{questionId}`)**:
   `allow read: if true;` (public read-only). Normal clients cannot tamper with quiz questions (`allow write: if false;`).
 * **Default**:
@@ -176,3 +200,42 @@ The field name is strictly standardized as:
 imageUrl
 ```
 Image URLs are direct HTTPS links (hosted either on Firebase Storage or verified CDN assets). When loading in Flutter, `ArticlePage` utilizes caching and graceful fallback handling with loading placeholders and error states.
+
+---
+
+## 7. Concrete Mixture Dataset & Import Utility
+
+### Dataset Overview
+* **Source**: `Datasets/Concrete_Data.xls`
+* **Total Rows**: Exactly 1,030 concrete mixture test records.
+* **Collection Path**: `articles/cement/mixtureData/{recordId}`
+* **Document ID Format**: Deterministic sequential keys `record001` through `record1030` (zero-padded).
+
+### Field & Unit Mapping
+| Firestore Field | Dataset Column | Data Type | Unit |
+| :--- | :--- | :--- | :--- |
+| `cement` | Cement (component 1) | `double` | `kg/m³` |
+| `blastFurnaceSlag` | Blast Furnace Slag (component 2) | `double` | `kg/m³` |
+| `flyAsh` | Fly Ash (component 3) | `double` | `kg/m³` |
+| `water` | Water (component 4) | `double` | `kg/m³` |
+| `superplasticizer` | Superplasticizer (component 5) | `double` | `kg/m³` |
+| `coarseAggregate` | Coarse Aggregate (component 6) | `double` | `kg/m³` |
+| `fineAggregate` | Fine Aggregate (component 7) | `double` | `kg/m³` |
+| `age` | Age | `int` | `days` |
+| `compressiveStrength` | Concrete compressive strength | `double` | `MPa` |
+| `recordId` | Generated identifier (`record001`..`record1030`) | `String` | — |
+| `createdAt` | Import timestamp | `Timestamp` | — |
+
+### Import Tool Execution
+The import utility is located in `tools/firebase_import/`:
+```bash
+cd tools/firebase_import
+npm install
+node import_dataset.js
+```
+
+Features of the utility:
+1. **Direct Firestore Batched Writes**: Uses `@google-cloud/firestore` with 500-operation chunked batches for atomic and high-throughput ingestion.
+2. **Safe Admin Authentication**: Uses the authenticated Firebase CLI OAuth token, avoiding exposed or committed secret service account keys.
+3. **Deterministic Keys & Verification**: Automatically verifies first (`record001`), middle, and last (`record1030`) document values against the original dataset.
+
