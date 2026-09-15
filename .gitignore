@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Import tools and credentials
+tools/firebase_import/node_modules/
+*serviceAccount*.json
+*service-account*.json
+*.pem
+

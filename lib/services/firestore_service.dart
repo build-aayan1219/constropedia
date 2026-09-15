@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/article.dart';
 import '../models/quiz_question.dart';
+import '../models/mixture_record.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -283,6 +284,94 @@ class FirestoreService {
       debugPrint('Error fetching quiz questions: $e');
       return [];
     }
+  }
+
+  // --------------------------------------------------
+  // CONCRETE MIXTURE DATA
+  // --------------------------------------------------
+
+  /// Get sample mixture record (e.g. record001) for previewing component values
+  Future<ConcreteMixtureRecord?> getSampleMixtureRecord({
+    String articleId = 'cement',
+  }) async {
+    try {
+      // First try record001 directly
+      final doc = await _firestore
+          .collection('articles')
+          .doc(articleId)
+          .collection('mixtureData')
+          .doc('record001')
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        return ConcreteMixtureRecord.fromMap(doc.id, doc.data()!);
+      }
+
+      // Fallback: get first available document
+      final querySnap = await _firestore
+          .collection('articles')
+          .doc(articleId)
+          .collection('mixtureData')
+          .limit(1)
+          .get();
+
+      if (querySnap.docs.isNotEmpty) {
+        final firstDoc = querySnap.docs.first;
+        return ConcreteMixtureRecord.fromMap(firstDoc.id, firstDoc.data());
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Error getting sample mixture record for $articleId: $e');
+      return null;
+    }
+  }
+
+  /// Get paginated mixture records from articles/{articleId}/mixtureData
+  Future<List<ConcreteMixtureRecord>> getCementMixtureData({
+    String articleId = 'cement',
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    try {
+      Query<Map<String, dynamic>> query = _firestore
+          .collection('articles')
+          .doc(articleId)
+          .collection('mixtureData')
+          .limit(limit);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final snapshot = await query.get();
+
+      return snapshot.docs
+          .map((doc) => ConcreteMixtureRecord.fromMap(doc.id, doc.data()))
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting mixture records for $articleId: $e');
+      return [];
+    }
+  }
+
+  /// Get query snapshot for paginated browsing
+  Future<QuerySnapshot<Map<String, dynamic>>> getMixtureDataSnapshot({
+    String articleId = 'cement',
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('articles')
+        .doc(articleId)
+        .collection('mixtureData')
+        .limit(limit);
+
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    return await query.get();
   }
 
   // --------------------------------------------------
