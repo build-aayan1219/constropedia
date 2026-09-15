@@ -20,6 +20,12 @@ service cloud.firestore {
       allow read: if true;
       // Client writes are disabled to prevent normal users from modifying articles
       allow write: if false;
+
+      // MIXTURE DATA SUBCOLLECTION (e.g. articles/cement/mixtureData)
+      match /mixtureData/{recordId} {
+        allow read: if true;
+        allow write: if false;
+      }
     }
 
     // QUIZ QUESTIONS COLLECTION

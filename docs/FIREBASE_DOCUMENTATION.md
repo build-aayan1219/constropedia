@@ -52,7 +52,21 @@ Firestore
 │         ├── content: String
 │         ├── category: String
 │         ├── imageUrl: String?
-│         └── createdAt: Timestamp
+│         ├── createdAt: Timestamp
+│         │
+│         └── mixtureData (subcollection, e.g. for articleId == 'cement')
+│              └── {recordId} (record001 ... record1030)
+│                   ├── recordId: String
+│                   ├── cement: double (kg/m³)
+│                   ├── blastFurnaceSlag: double (kg/m³)
+│                   ├── flyAsh: double (kg/m³)
+│                   ├── water: double (kg/m³)
+│                   ├── superplasticizer: double (kg/m³)
+│                   ├── coarseAggregate: double (kg/m³)
+│                   ├── fineAggregate: double (kg/m³)
+│                   ├── age: int (days)
+│                   ├── compressiveStrength: double (MPa)
+│                   └── createdAt: Timestamp
 │
 └── quizQuestions
      └── {questionId}

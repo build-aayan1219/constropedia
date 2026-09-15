@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/article.dart';
+import '../models/mixture_record.dart';
 import '../services/firestore_service.dart';
+import 'cement_mixture_data_page.dart';
+import 'component_detail_page.dart';
 
 class ArticlePage extends StatefulWidget {
   final Article article;
@@ -20,10 +23,49 @@ class _ArticlePageState extends State<ArticlePage> {
   bool isBookmarked = false;
   bool isLoading = true;
 
+  ConcreteMixtureRecord? _sampleMixtureRecord;
+  bool _isLoadingMixture = false;
+  String? _mixtureError;
+
+  bool get _isCementArticle {
+    final title = widget.article.title.trim().toLowerCase();
+    final id = widget.article.id.trim().toLowerCase();
+    return title.contains('cement') || id == 'cement';
+  }
+
   @override
   void initState() {
     super.initState();
     checkBookmark();
+    if (_isCementArticle) {
+      _loadSampleMixture();
+    }
+  }
+
+  Future<void> _loadSampleMixture() async {
+    setState(() {
+      _isLoadingMixture = true;
+      _mixtureError = null;
+    });
+
+    try {
+      final sample = await _firestoreService.getSampleMixtureRecord(
+        articleId: 'cement',
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _sampleMixtureRecord = sample;
+        _isLoadingMixture = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading mixture sample: $e');
+      if (!mounted) return;
+      setState(() {
+        _mixtureError = 'Unable to load mixture data. Please try again.';
+        _isLoadingMixture = false;
+      });
+    }
   }
 
   // --------------------------------------------------
@@ -461,6 +503,14 @@ class _ArticlePageState extends State<ArticlePage> {
             const SizedBox(height: 14),
 
             // --------------------------------------------------
+            // CONCRETE MIXTURE DATA SECTION (FOR CEMENT)
+            // --------------------------------------------------
+            if (_isCementArticle) ...[
+              _buildConcreteMixtureSection(),
+              const SizedBox(height: 24),
+            ],
+
+            // --------------------------------------------------
             // BOOKMARK BUTTON
             // --------------------------------------------------
 
@@ -489,6 +539,203 @@ class _ArticlePageState extends State<ArticlePage> {
 
             const SizedBox(height: 20),
           ],
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // CONCRETE MIXTURE SECTION
+  // --------------------------------------------------
+
+  Widget _buildConcreteMixtureSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Concrete Mixture Components',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Standard component proportions and performance metrics from laboratory concrete mixes.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        if (_isLoadingMixture)
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Loading mixture components...'),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else if (_mixtureError != null)
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                children: [
+                  Text(
+                    _mixtureError!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _loadSampleMixture,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (_sampleMixtureRecord == null)
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(18),
+              child: Center(
+                child: Text('No mixture data available.'),
+              ),
+            ),
+          )
+        else ...[
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _sampleMixtureRecord!.components.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.55,
+            ),
+            itemBuilder: (context, idx) {
+              final comp = _sampleMixtureRecord!.components[idx];
+              return _buildComponentCard(comp);
+            },
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CementMixtureDataPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.table_chart_outlined),
+              label: const Text(
+                'View Mixture Data',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orange.shade900,
+                side: BorderSide(
+                  color: Colors.orange.shade700,
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildComponentCard(MixtureComponentItem comp) {
+    return Card(
+      elevation: 1.5,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ComponentDetailPage(component: comp),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                comp.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    comp.value,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    comp.unit,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
