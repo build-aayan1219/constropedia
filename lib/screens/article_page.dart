@@ -57,6 +57,9 @@ class _ArticlePageState extends State<ArticlePage> {
       setState(() {
         _sampleMixtureRecord = sample;
         _isLoadingMixture = false;
+        if (sample == null) {
+          _mixtureError = 'Unable to load mixture data. Please tap retry.';
+        }
       });
     } catch (e) {
       debugPrint('Error loading mixture sample: $e');
@@ -618,10 +621,20 @@ class _ArticlePageState extends State<ArticlePage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(18),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
               child: Center(
-                child: Text('No mixture data available.'),
+                child: Column(
+                  children: [
+                    const Text('No mixture data available.'),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: _loadSampleMixture,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Reload'),
+                    ),
+                  ],
+                ),
               ),
             ),
           )
