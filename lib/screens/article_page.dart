@@ -33,6 +33,7 @@ class _ArticlePageState extends State<ArticlePage> {
   Future<void> checkBookmark() async {
     try {
       final bookmarked = await _firestoreService.isBookmarked(
+        articleId: widget.article.id,
         title: widget.article.title,
       );
 
@@ -67,6 +68,7 @@ class _ArticlePageState extends State<ArticlePage> {
     try {
       if (isBookmarked) {
         await _firestoreService.removeBookmark(
+          articleId: widget.article.id,
           title: widget.article.title,
         );
 
@@ -84,6 +86,7 @@ class _ArticlePageState extends State<ArticlePage> {
         );
       } else {
         await _firestoreService.addBookmark(
+          articleId: widget.article.id,
           title: widget.article.title,
           description: widget.article.description,
           content: widget.article.content,

@@ -5,6 +5,7 @@ class Article {
   final String content;
   final String category;
   final String? imageUrl;
+  final dynamic createdAt;
 
   Article({
     required this.id,
@@ -13,6 +14,7 @@ class Article {
     required this.content,
     required this.category,
     this.imageUrl,
+    this.createdAt,
   });
 
   factory Article.fromMap(String id, Map<String, dynamic> data) {
@@ -23,6 +25,7 @@ class Article {
       content: data['content'] ?? '',
       category: data['category'] ?? '',
       imageUrl: data['imageUrl'],
+      createdAt: data['createdAt'],
     );
   }
 
@@ -33,6 +36,7 @@ class Article {
       'content': content,
       'category': category,
       'imageUrl': imageUrl,
+      'createdAt': createdAt,
     };
   }
 }

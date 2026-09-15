@@ -81,12 +81,13 @@ class BookmarksPage extends StatelessWidget {
               final bookmark = bookmarks[index];
 
               final Article article = Article(
-                id: bookmark['id'] ?? '',
+                id: bookmark['articleId'] ?? bookmark['id'] ?? '',
                 title: bookmark['title'] ?? '',
                 description: bookmark['description'] ?? '',
                 content: bookmark['content'] ?? '',
                 category: bookmark['category'] ?? '',
                 imageUrl: bookmark['imageUrl'],
+                createdAt: bookmark['createdAt'],
               );
 
               return _buildBookmarkCard(

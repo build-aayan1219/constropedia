@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/firestore_service.dart';
 
 class QuizQuestion {
   final String question;
@@ -401,9 +402,15 @@ class _QuizPageState extends State<QuizPage> {
     'Tools & Machinery': Icons.construction_outlined,
   };
 
+  List<QuizQuestion> _activeQuestions = [];
+
   List<QuizQuestion> get currentQuestions {
     if (selectedCategory == null) {
       return [];
+    }
+
+    if (_activeQuestions.isNotEmpty) {
+      return _activeQuestions;
     }
 
     return quizData[selectedCategory] ?? [];
@@ -415,7 +422,41 @@ class _QuizPageState extends State<QuizPage> {
       currentQuestion = 0;
       score = 0;
       selectedAnswer = null;
+      _activeQuestions = List.from(quizData[category] ?? []);
     });
+
+    _loadFirestoreQuestions(category);
+  }
+
+  Future<void> _loadFirestoreQuestions(String category) async {
+    try {
+      final remoteQuestions =
+          await FirestoreService().fetchQuizQuestions(category);
+
+      if (remoteQuestions.isNotEmpty &&
+          mounted &&
+          selectedCategory == category) {
+        final mapped = remoteQuestions.map((q) {
+          int correctIdx = int.tryParse(q.correctAnswer) ?? -1;
+          if (correctIdx < 0 || correctIdx >= q.options.length) {
+            correctIdx = q.options.indexOf(q.correctAnswer);
+          }
+          if (correctIdx < 0) correctIdx = 0;
+
+          return QuizQuestion(
+            question: q.question,
+            options: q.options,
+            correctAnswer: correctIdx,
+          );
+        }).toList();
+
+        setState(() {
+          _activeQuestions = mapped;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading Firestore questions: $e');
+    }
   }
 
   void selectAnswer(int index) {

@@ -1,12 +1,35 @@
 import 'package:flutter/material.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/firestore_service.dart';
 import 'bookmarks_page.dart';
 import 'search_page.dart';
 import 'quiz_page.dart';
 import '../widgets/category_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    FirestoreService().seedInitialDataIfNeeded();
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,12 +49,17 @@ class HomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BookmarksPage(),
+                  builder: (context) => const BookmarksPage(),
                 ),
               );
             },
             icon: const Icon(Icons.bookmark_outline),
             tooltip: 'Bookmarks',
+          ),
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Logout',
           ),
           const SizedBox(width: 8),
         ],

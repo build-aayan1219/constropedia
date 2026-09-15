@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // USERS COLLECTION & SUBCOLLECTIONS
+    match /users/{userId} {
+      // Authenticated users can only read and write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // BOOKMARKS SUBCOLLECTION
+      match /bookmarks/{bookmarkId} {
+        // Authenticated users can only read and write their own bookmarks
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ARTICLES COLLECTION
+    match /articles/{articleId} {
+      // Normal users can read all articles
+      allow read: if true;
+      // Client writes are disabled to prevent normal users from modifying articles
+      allow write: if false;
+    }
+
+    // QUIZ QUESTIONS COLLECTION
+    match /quizQuestions/{questionId} {
+      // Normal users can read quiz questions
+      allow read: if true;
+      // Client writes are disabled to prevent tampering
+      allow write: if false;
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
