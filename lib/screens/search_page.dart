@@ -31,6 +31,56 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  List<Article> filterArticles(List<Article> articles) {
+    if (searchText.isEmpty) {
+      return articles;
+    }
+
+    final results = articles.where((article) {
+      final title = article.title.toLowerCase();
+      final description = article.description.toLowerCase();
+      final content = article.content.toLowerCase();
+      final category = article.category.toLowerCase();
+
+      return title.contains(searchText) ||
+          description.contains(searchText) ||
+          content.contains(searchText) ||
+          category.contains(searchText);
+    }).toList();
+
+    // Exact title matches first.
+    results.sort((a, b) {
+      final aTitle = a.title.toLowerCase();
+      final bTitle = b.title.toLowerCase();
+
+      final aExact = aTitle == searchText;
+      final bExact = bTitle == searchText;
+
+      if (aExact && !bExact) {
+        return -1;
+      }
+
+      if (!aExact && bExact) {
+        return 1;
+      }
+
+      final aStarts = aTitle.startsWith(searchText);
+      final bStarts = bTitle.startsWith(searchText);
+
+      if (aStarts && !bStarts) {
+        return -1;
+      }
+
+      if (!aStarts && bStarts) {
+        return 1;
+      }
+
+      return aTitle.compareTo(bTitle);
+    });
+
+    return results;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,10 +94,6 @@ class _SearchPageState extends State<SearchPage> {
       ),
       body: Column(
         children: [
-          // --------------------------------------------------
-          // SEARCH BAR
-          // --------------------------------------------------
-
           Padding(
             padding: const EdgeInsets.fromLTRB(
               16,
@@ -59,13 +105,13 @@ class _SearchPageState extends State<SearchPage> {
               controller: searchController,
               onChanged: performSearch,
               decoration: InputDecoration(
-                hintText: 'Search articles...',
+                hintText: 'Search construction terms...',
                 prefixIcon: const Icon(
                   Icons.search_rounded,
                 ),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
-                        tooltip: 'Clear',
+                        tooltip: 'Clear search',
                         onPressed: () {
                           searchController.clear();
 
@@ -95,15 +141,10 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
 
-          // --------------------------------------------------
-          // ARTICLES
-          // --------------------------------------------------
-
           Expanded(
             child: StreamBuilder<List<Article>>(
               stream: firestoreService.getArticles(),
               builder: (context, snapshot) {
-                // Loading
                 if (snapshot.connectionState ==
                     ConnectionState.waiting) {
                   return const Center(
@@ -111,88 +152,17 @@ class _SearchPageState extends State<SearchPage> {
                   );
                 }
 
-                // Error
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            size: 55,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Unable to load articles',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Please check your internet connection and try again.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  return _buildErrorState(
+                    snapshot.error.toString(),
                   );
                 }
 
                 final articles = snapshot.data ?? [];
+                final searchResults = filterArticles(articles);
 
-                // Title-only search
-                final searchResults = searchText.isEmpty
-                    ? articles
-                    : articles.where((article) {
-                        final title =
-                            article.title.toLowerCase();
-
-                        return title.contains(searchText);
-                      }).toList();
-
-                // No results
                 if (searchResults.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search_off_rounded,
-                            size: 65,
-                            color: Colors.orange.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No articles found',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try searching with a different article title.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  return _buildEmptyState();
                 }
 
                 return ListView.builder(
@@ -206,115 +176,9 @@ class _SearchPageState extends State<SearchPage> {
                   itemBuilder: (context, index) {
                     final article = searchResults[index];
 
-                    return Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.only(
-                        bottom: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ArticlePage(
-                                article: article,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding:
-                                    const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade100,
-                                  borderRadius:
-                                      BorderRadius.circular(14),
-                                ),
-                                child: const Icon(
-                                  Icons.menu_book_rounded,
-                                  size: 28,
-                                ),
-                              ),
-
-                              const SizedBox(width: 14),
-
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      article.title,
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight:
-                                            FontWeight.bold,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 6),
-
-                                    Text(
-                                      article.description,
-                                      maxLines: 3,
-                                      overflow:
-                                          TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        height: 1.4,
-                                        color:
-                                            Colors.grey.shade700,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 10),
-
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.category_outlined,
-                                          size: 15,
-                                          color: Colors
-                                              .orange.shade800,
-                                        ),
-                                        const SizedBox(width: 5),
-                                        Text(
-                                          article.category,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight:
-                                                FontWeight.w600,
-                                            color: Colors
-                                                .orange.shade800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(width: 8),
-
-                              const Icon(
-                                Icons
-                                    .arrow_forward_ios_rounded,
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    return _buildArticleCard(
+                      context,
+                      article,
                     );
                   },
                 );
@@ -322,6 +186,210 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildArticleCard(
+    BuildContext context,
+    Article article,
+  ) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(
+        bottom: 14,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ArticlePage(
+                article: article,
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 28,
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      article.title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      article.description,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.4,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.category_outlined,
+                          size: 15,
+                          color: Colors.orange.shade800,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            article.category,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              searchText.isEmpty
+                  ? Icons.menu_book_outlined
+                  : Icons.search_off_rounded,
+              size: 65,
+              color: Colors.orange.shade300,
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              searchText.isEmpty
+                  ? 'No articles available'
+                  : 'No articles found',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              searchText.isEmpty
+                  ? 'There are no articles available yet.'
+                  : 'Try a different construction term.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 55,
+            ),
+
+            const SizedBox(height: 16),
+
+            const Text(
+              'Unable to load articles',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {});
+              },
+              icon: const Icon(
+                Icons.refresh_rounded,
+              ),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
