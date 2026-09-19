@@ -58,7 +58,7 @@ class FirestoreService {
   // ARTICLES
   // --------------------------------------------------
 
-  /// Get all articles from Firestore
+  /// Get all articles from Firestore.
   Stream<List<Article>> getArticles() {
     return _firestore
         .collection('articles')
@@ -76,13 +76,16 @@ class FirestoreService {
         );
   }
 
-  /// Get articles belonging to a particular category
+  /// Get articles belonging to a particular category.
   Stream<List<Article>> getArticlesByCategory(
     String category,
   ) {
     return _firestore
         .collection('articles')
-        .where('category', isEqualTo: category)
+        .where(
+          'category',
+          isEqualTo: category,
+        )
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
@@ -96,16 +99,28 @@ class FirestoreService {
         );
   }
 
-  /// Get single article by ID
-  Future<Article?> getArticle(String articleId) async {
+  /// Get a single article by ID.
+  Future<Article?> getArticle(
+    String articleId,
+  ) async {
     try {
-      final doc = await _firestore.collection('articles').doc(articleId).get();
+      final doc = await _firestore
+          .collection('articles')
+          .doc(articleId)
+          .get();
+
       if (doc.exists && doc.data() != null) {
-        return Article.fromMap(doc.id, doc.data()!);
+        return Article.fromMap(
+          doc.id,
+          doc.data()!,
+        );
       }
+
       return null;
     } catch (e) {
-      debugPrint('Error getting article $articleId: $e');
+      debugPrint(
+        'Error getting article $articleId: $e',
+      );
       return null;
     }
   }
@@ -128,10 +143,13 @@ class FirestoreService {
       throw Exception('User is not logged in');
     }
 
-    // Prefer articleId as docId to prevent duplicate bookmarks for the same article
-    final bookmarkId = (articleId != null && articleId.trim().isNotEmpty)
-        ? articleId.trim()
-        : title;
+    // Prefer articleId as document ID.
+    // This prevents duplicate bookmarks for
+    // the same Firestore article.
+    final bookmarkId =
+        (articleId != null && articleId.trim().isNotEmpty)
+            ? articleId.trim()
+            : title;
 
     await _firestore
         .collection('users')
@@ -159,9 +177,10 @@ class FirestoreService {
       throw Exception('User is not logged in');
     }
 
-    final docId = (articleId != null && articleId.trim().isNotEmpty)
-        ? articleId.trim()
-        : title;
+    final docId =
+        (articleId != null && articleId.trim().isNotEmpty)
+            ? articleId.trim()
+            : title;
 
     await _firestore
         .collection('users')
@@ -170,7 +189,9 @@ class FirestoreService {
         .doc(docId)
         .delete();
 
-    // If docId was an articleId different from title, also clean up title-keyed doc if it exists
+    // If the current document uses articleId and
+    // an older bookmark used title as its ID,
+    // remove that old document too.
     if (docId != title) {
       await _firestore
           .collection('users')
@@ -192,9 +213,10 @@ class FirestoreService {
       return false;
     }
 
-    final docId = (articleId != null && articleId.trim().isNotEmpty)
-        ? articleId.trim()
-        : title;
+    final docId =
+        (articleId != null && articleId.trim().isNotEmpty)
+            ? articleId.trim()
+            : title;
 
     final document = await _firestore
         .collection('users')
@@ -207,7 +229,7 @@ class FirestoreService {
       return true;
     }
 
-    // Check title-keyed fallback if different
+    // Check title-based bookmark as a fallback.
     if (docId != title) {
       final titleDoc = await _firestore
           .collection('users')
@@ -215,6 +237,7 @@ class FirestoreService {
           .collection('bookmarks')
           .doc(title)
           .get();
+
       return titleDoc.exists;
     }
 
@@ -232,14 +255,18 @@ class FirestoreService {
         .collection('users')
         .doc(user.uid)
         .collection('bookmarks')
-        .orderBy('createdAt', descending: true)
+        .orderBy(
+          'createdAt',
+          descending: true,
+        )
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
               .map(
                 (doc) => {
                   'id': doc.id,
-                  'articleId': doc.data()['articleId'] ?? doc.id,
+                  'articleId':
+                      doc.data()['articleId'] ?? doc.id,
                   ...doc.data(),
                 },
               )
@@ -251,11 +278,16 @@ class FirestoreService {
   // QUIZ QUESTIONS
   // --------------------------------------------------
 
-  /// Get quiz questions for a category from Firestore
-  Stream<List<QuizQuestionModel>> getQuizQuestionsByCategory(String category) {
+  /// Get quiz questions for a category from Firestore.
+  Stream<List<QuizQuestionModel>> getQuizQuestionsByCategory(
+    String category,
+  ) {
     return _firestore
         .collection('quizQuestions')
-        .where('category', isEqualTo: category)
+        .where(
+          'category',
+          isEqualTo: category,
+        )
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
@@ -269,33 +301,122 @@ class FirestoreService {
         );
   }
 
-  /// Get quiz questions for a category (one-time Future)
-  Future<List<QuizQuestionModel>> fetchQuizQuestions(String category) async {
+  /// Get quiz questions for a category once.
+  Future<List<QuizQuestionModel>> fetchQuizQuestions(
+    String category,
+  ) async {
     try {
       final snapshot = await _firestore
           .collection('quizQuestions')
-          .where('category', isEqualTo: category)
+          .where(
+            'category',
+            isEqualTo: category,
+          )
           .get();
 
       return snapshot.docs
-          .map((doc) => QuizQuestionModel.fromMap(doc.id, doc.data()))
+          .map(
+            (doc) => QuizQuestionModel.fromMap(
+              doc.id,
+              doc.data(),
+            ),
+          )
           .toList();
     } catch (e) {
-      debugPrint('Error fetching quiz questions: $e');
+      debugPrint(
+        'Error fetching quiz questions: $e',
+      );
+
       return [];
     }
+  }
+
+  // --------------------------------------------------
+  // QUIZ HISTORY
+  // --------------------------------------------------
+
+  /// Save one completed quiz attempt for the
+  /// currently authenticated user.
+  Future<void> saveQuizResult({
+    required String category,
+    required int score,
+    required int totalQuestions,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception('User is not logged in');
+    }
+
+    if (totalQuestions <= 0) {
+      throw Exception(
+        'Total questions must be greater than zero',
+      );
+    }
+
+    if (score < 0 || score > totalQuestions) {
+      throw Exception(
+        'Invalid quiz score',
+      );
+    }
+
+    final percentage =
+        (score / totalQuestions) * 100;
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('quizHistory')
+        .add({
+      'category': category,
+      'score': score,
+      'totalQuestions': totalQuestions,
+      'percentage': percentage,
+      'completedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Get the quiz history of the currently
+  /// authenticated user.
+  Stream<List<Map<String, dynamic>>> getQuizHistory() {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return Stream.value([]);
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('quizHistory')
+        .orderBy(
+          'completedAt',
+          descending: true,
+        )
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => {
+                  'id': doc.id,
+                  ...doc.data(),
+                },
+              )
+              .toList(),
+        );
   }
 
   // --------------------------------------------------
   // CONCRETE MIXTURE DATA
   // --------------------------------------------------
 
-  /// Get sample mixture record (e.g. record001) for previewing component values
+  /// Get sample mixture record
+  /// for previewing component values.
   Future<ConcreteMixtureRecord?> getSampleMixtureRecord({
     String articleId = 'cement',
   }) async {
     try {
-      // First try record001 directly
+      // First try record001 directly.
       final doc = await _firestore
           .collection('articles')
           .doc(articleId)
@@ -304,10 +425,13 @@ class FirestoreService {
           .get();
 
       if (doc.exists && doc.data() != null) {
-        return ConcreteMixtureRecord.fromMap(doc.id, doc.data()!);
+        return ConcreteMixtureRecord.fromMap(
+          doc.id,
+          doc.data()!,
+        );
       }
 
-      // Fallback: get first available document
+      // Fallback: get first available document.
       final querySnap = await _firestore
           .collection('articles')
           .doc(articleId)
@@ -317,71 +441,97 @@ class FirestoreService {
 
       if (querySnap.docs.isNotEmpty) {
         final firstDoc = querySnap.docs.first;
-        return ConcreteMixtureRecord.fromMap(firstDoc.id, firstDoc.data());
+
+        return ConcreteMixtureRecord.fromMap(
+          firstDoc.id,
+          firstDoc.data(),
+        );
       }
 
       return null;
     } catch (e) {
-      debugPrint('Error getting sample mixture record for $articleId: $e');
+      debugPrint(
+        'Error getting sample mixture record for '
+        '$articleId: $e',
+      );
+
       return null;
     }
   }
 
-  /// Get paginated mixture records from articles/{articleId}/mixtureData
+  /// Get paginated mixture records.
   Future<List<ConcreteMixtureRecord>> getCementMixtureData({
     String articleId = 'cement',
     int limit = 20,
     DocumentSnapshot? startAfter,
   }) async {
     try {
-      Query<Map<String, dynamic>> query = _firestore
-          .collection('articles')
-          .doc(articleId)
-          .collection('mixtureData')
-          .limit(limit);
+      Query<Map<String, dynamic>> query =
+          _firestore
+              .collection('articles')
+              .doc(articleId)
+              .collection('mixtureData')
+              .limit(limit);
 
       if (startAfter != null) {
-        query = query.startAfterDocument(startAfter);
+        query = query.startAfterDocument(
+          startAfter,
+        );
       }
 
       final snapshot = await query.get();
 
       return snapshot.docs
-          .map((doc) => ConcreteMixtureRecord.fromMap(doc.id, doc.data()))
+          .map(
+            (doc) => ConcreteMixtureRecord.fromMap(
+              doc.id,
+              doc.data(),
+            ),
+          )
           .toList();
     } catch (e) {
-      debugPrint('Error getting mixture records for $articleId: $e');
+      debugPrint(
+        'Error getting mixture records for '
+        '$articleId: $e',
+      );
+
       return [];
     }
   }
 
-  /// Get query snapshot for paginated browsing
-  Future<QuerySnapshot<Map<String, dynamic>>> getMixtureDataSnapshot({
+  /// Get query snapshot for paginated browsing.
+  Future<QuerySnapshot<Map<String, dynamic>>>
+      getMixtureDataSnapshot({
     String articleId = 'cement',
     int limit = 20,
     DocumentSnapshot? startAfter,
   }) async {
-    Query<Map<String, dynamic>> query = _firestore
-        .collection('articles')
-        .doc(articleId)
-        .collection('mixtureData')
-        .limit(limit);
+    Query<Map<String, dynamic>> query =
+        _firestore
+            .collection('articles')
+            .doc(articleId)
+            .collection('mixtureData')
+            .limit(limit);
 
     if (startAfter != null) {
-      query = query.startAfterDocument(startAfter);
+      query = query.startAfterDocument(
+        startAfter,
+      );
     }
 
     return await query.get();
   }
 
   // --------------------------------------------------
-  // DATA SEEDING HELPER (Idempotent initial data setup)
+  // DATA SEEDING HELPER
   // --------------------------------------------------
 
   Future<void> seedInitialDataIfNeeded() async {
     try {
-      final articlesSnapshot =
-          await _firestore.collection('articles').limit(1).get();
+      final articlesSnapshot = await _firestore
+          .collection('articles')
+          .limit(1)
+          .get();
 
       if (articlesSnapshot.docs.isEmpty) {
         final initialArticles = [
@@ -394,7 +544,8 @@ class FirestoreService {
             'category': 'Materials',
             'imageUrl':
                 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Concrete',
@@ -405,7 +556,8 @@ class FirestoreService {
             'category': 'Materials',
             'imageUrl':
                 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Bricks',
@@ -416,7 +568,8 @@ class FirestoreService {
             'category': 'Materials',
             'imageUrl':
                 'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Steel Reinforcement',
@@ -427,7 +580,8 @@ class FirestoreService {
             'category': 'Materials',
             'imageUrl':
                 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Foundations',
@@ -438,7 +592,8 @@ class FirestoreService {
             'category': 'Structural',
             'imageUrl':
                 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Beams & Slabs',
@@ -449,7 +604,8 @@ class FirestoreService {
             'category': 'Structural',
             'imageUrl':
                 'https://images.unsplash.com/photo-1517581177682-a085bb7ffb15?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Plastering & Putty',
@@ -460,7 +616,8 @@ class FirestoreService {
             'category': 'Finishing',
             'imageUrl':
                 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Personal Protective Equipment',
@@ -471,7 +628,8 @@ class FirestoreService {
             'category': 'Site Safety',
             'imageUrl':
                 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
           {
             'title': 'Concrete Mixer & Batching Plant',
@@ -482,20 +640,33 @@ class FirestoreService {
             'category': 'Tools & Machinery',
             'imageUrl':
                 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt':
+                FieldValue.serverTimestamp(),
           },
         ];
 
         final batch = _firestore.batch();
+
         for (final item in initialArticles) {
-          final docRef = _firestore.collection('articles').doc();
-          batch.set(docRef, item);
+          final docRef =
+              _firestore.collection('articles').doc();
+
+          batch.set(
+            docRef,
+            item,
+          );
         }
+
         await batch.commit();
-        debugPrint('Seeded initial articles into Firestore.');
+
+        debugPrint(
+          'Seeded initial articles into Firestore.',
+        );
       }
     } catch (e) {
-      debugPrint('Error in seedInitialDataIfNeeded: $e');
+      debugPrint(
+        'Error in seedInitialDataIfNeeded: $e',
+      );
     }
   }
 }
