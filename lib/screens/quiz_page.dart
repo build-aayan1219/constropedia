@@ -1,17 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../services/firestore_service.dart';
-
-class QuizQuestion {
-  final String question;
-  final List<String> options;
-  final int correctAnswer;
-
-  QuizQuestion({
-    required this.question,
-    required this.options,
-    required this.correctAnswer,
-  });
-}
+import 'quiz_history_page.dart';
 
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key});
@@ -21,463 +11,615 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
+  final FirestoreService _firestoreService = FirestoreService();
+
   String? selectedCategory;
 
   int currentQuestion = 0;
   int score = 0;
   int? selectedAnswer;
 
-  final Map<String, List<QuizQuestion>> quizData = {
+  bool isLoading = false;
+
+  List<Map<String, dynamic>> currentQuestions = [];
+
+  final Map<String, List<Map<String, dynamic>>> localQuestions = {
     'Materials': [
-      QuizQuestion(
-        question:
-            'Which material is commonly used as a binding agent in concrete?',
-        options: ['Cement', 'Sand', 'Gravel', 'Steel'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question:
-            'Which material is mainly used as fine aggregate in concrete?',
-        options: ['Steel', 'Sand', 'Cement', 'Brick'],
-        correctAnswer: 1,
-      ),
-      QuizQuestion(
-        question: 'Which of the following is a coarse aggregate?',
-        options: ['Sand', 'Cement', 'Gravel', 'Water'],
-        correctAnswer: 2,
-      ),
-      QuizQuestion(
-        question: 'What is the main raw material used to manufacture cement?',
-        options: ['Limestone', 'Wood', 'Plastic', 'Glass'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which material is commonly used for reinforcement in concrete?',
-        options: ['Timber', 'Steel', 'Brick', 'Glass'],
-        correctAnswer: 1,
-      ),
-      QuizQuestion(
-        question: 'What is brick primarily made from?',
-        options: ['Clay', 'Steel', 'Cement only', 'Aluminium'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which material is known for its high compressive strength?',
-        options: ['Concrete', 'Rubber', 'Plastic', 'Fabric'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which material is commonly used for waterproofing roofs?',
-        options: ['Bitumen', 'Sand', 'Gravel', 'Brick'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which material is commonly used for electrical wiring?',
-        options: ['Copper', 'Concrete', 'Brick', 'Cement'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which material is generally used for glass manufacturing?',
-        options: ['Sand', 'Steel', 'Cement', 'Timber'],
-        correctAnswer: 0,
-      ),
+      {
+        'question': 'Which material is commonly used to make concrete?',
+        'options': [
+          'Cement',
+          'Wood',
+          'Glass',
+          'Plastic',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is commonly used for reinforcement in concrete?',
+        'options': [
+          'Paper',
+          'Rubber',
+          'Steel',
+          'Plastic',
+        ],
+        'answer': 2,
+      },
+      {
+        'question': 'Which material is commonly used for masonry walls?',
+        'options': [
+          'Bricks',
+          'Glass',
+          'Rubber',
+          'Cloth',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is commonly used to produce mortar?',
+        'options': [
+          'Cement',
+          'Plastic',
+          'Aluminium',
+          'Glass',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is known for high tensile strength?',
+        'options': [
+          'Steel',
+          'Clay',
+          'Wood',
+          'Sand',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What is a major ingredient in concrete?',
+        'options': [
+          'Cement',
+          'Paper',
+          'Fabric',
+          'Rubber',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is commonly used for insulation?',
+        'options': [
+          'Mineral wool',
+          'Steel',
+          'Concrete',
+          'Brick',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is commonly used for glass production?',
+        'options': [
+          'Silica sand',
+          'Cement',
+          'Steel',
+          'Gravel',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is commonly used as a fine aggregate?',
+        'options': [
+          'Sand',
+          'Steel',
+          'Brick',
+          'Glass',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is commonly used as coarse aggregate?',
+        'options': [
+          'Gravel',
+          'Paper',
+          'Wood',
+          'Plastic',
+        ],
+        'answer': 0,
+      },
     ],
 
     'Structural': [
-      QuizQuestion(
-        question: 'Which structural element primarily carries vertical loads?',
-        options: ['Column', 'Window', 'Door', 'Paint'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which element transfers loads from slabs to columns?',
-        options: ['Beam', 'Door', 'Wall paint', 'Window'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is the main purpose of a foundation?',
-        options: [
-          'Support the structure',
-          'Decorate the building',
-          'Provide lighting',
-          'Reduce painting cost',
+      {
+        'question': 'What is the main purpose of a foundation?',
+        'options': [
+          'To decorate the building',
+          'To transfer building loads to the ground',
+          'To paint the building',
+          'To provide lighting',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which structural member is mainly subjected to bending?',
-        options: ['Beam', 'Column', 'Foundation soil', 'Door'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What does RCC stand for?',
-        options: [
+        'answer': 1,
+      },
+      {
+        'question': 'Which structural member mainly carries bending loads?',
+        'options': [
+          'Beam',
+          'Wall paint',
+          'Door',
+          'Window',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which structural member is mainly vertical?',
+        'options': [
+          'Column',
+          'Beam',
+          'Slab',
+          'Roof tile',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What does a slab primarily provide?',
+        'options': [
+          'Floor or roof surface',
+          'Paint',
+          'Lighting',
+          'Drainage only',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which structure transfers loads to the foundation?',
+        'options': [
+          'Columns',
+          'Paint',
+          'Tiles',
+          'Windows',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What does RCC stand for?',
+        'options': [
           'Reinforced Cement Concrete',
-          'Rapid Construction Concrete',
-          'Ready Cement Construction',
-          'Reinforced Clay Concrete',
+          'Rapid Construction Cement',
+          'Road Construction Concrete',
+          'Reinforced Clay Construction',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which structure is commonly used to span an opening?',
-        options: ['Beam', 'Foundation', 'Footing', 'Column base'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is a slab mainly used for?',
-        options: [
-          'Floor or roof',
-          'Painting walls',
-          'Water storage only',
-          'Electrical wiring',
+        'answer': 0,
+      },
+      {
+        'question': 'Which force tends to stretch a structural member?',
+        'options': [
+          'Tension',
+          'Compression',
+          'None',
+          'Friction only',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which force tends to pull a structural member apart?',
-        options: ['Tension', 'Compression', 'Shear', 'Torsion'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which force tends to push a member together?',
-        options: ['Compression', 'Tension', 'Bending', 'Torsion'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is the purpose of reinforcement in RCC?',
-        options: [
-          'To resist tensile forces',
-          'To reduce concrete weight',
-          'To replace cement',
-          'To improve paint quality',
+        'answer': 0,
+      },
+      {
+        'question': 'Which force tends to shorten a structural member?',
+        'options': [
+          'Compression',
+          'Tension',
+          'Rotation',
+          'Expansion only',
         ],
-        correctAnswer: 0,
-      ),
+        'answer': 0,
+      },
+      {
+        'question': 'What is a column designed primarily to resist?',
+        'options': [
+          'Vertical loads',
+          'Paint',
+          'Water only',
+          'Lighting',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which part of a building transfers loads to soil?',
+        'options': [
+          'Foundation',
+          'Window',
+          'Door',
+          'Ceiling paint',
+        ],
+        'answer': 0,
+      },
     ],
 
     'Finishing': [
-      QuizQuestion(
-        question: 'What is plastering mainly used for?',
-        options: [
-          'Finishing wall surfaces',
-          'Making foundations',
-          'Installing wiring',
+      {
+        'question': 'What is plastering mainly used for?',
+        'options': [
+          'Smoothing and protecting walls',
           'Making steel',
+          'Digging foundations',
+          'Lifting materials',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which material is commonly used for wall painting?',
-        options: ['Paint', 'Gravel', 'Steel', 'Cement blocks'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is tiling commonly used for?',
-        options: [
-          'Floor and wall finishing',
+        'answer': 0,
+      },
+      {
+        'question': 'What is wall putty used for?',
+        'options': [
+          'Creating a smooth surface',
           'Structural reinforcement',
-          'Foundation construction',
+          'Excavation',
           'Concrete mixing',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is putty generally used for?',
-        options: [
-          'Smoothing wall surfaces',
-          'Making concrete',
-          'Reinforcing columns',
-          'Making foundations',
+        'answer': 0,
+      },
+      {
+        'question': 'Which material is commonly used for floor finishing?',
+        'options': [
+          'Tiles',
+          'Steel bars',
+          'Sandbags',
+          'Rebar',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which tool is commonly used for applying plaster?',
-        options: ['Trowel', 'Hammer drill', 'Wrench', 'Saw'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is waterproofing intended to prevent?',
-        options: [
-          'Water penetration',
-          'Concrete strength',
-          'Steel corrosion only',
-          'Wall painting',
+        'answer': 0,
+      },
+      {
+        'question': 'What is painting primarily used for?',
+        'options': [
+          'Protection and decoration',
+          'Foundation design',
+          'Load transfer',
+          'Excavation',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which finish is commonly applied to wooden surfaces?',
-        options: ['Varnish', 'Concrete', 'Gravel', 'Cement slurry'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is grouting commonly used for?',
-        options: [
-          'Filling joints or gaps',
-          'Painting walls',
+        'answer': 0,
+      },
+      {
+        'question': 'Which finish can be applied to walls for decoration?',
+        'options': [
+          'Paint',
+          'Rebar',
+          'Aggregate',
+          'Concrete block only',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What is tiling commonly used for?',
+        'options': [
+          'Floor and wall finishes',
+          'Foundation excavation',
+          'Steel reinforcement',
+          'Concrete testing',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What does primer help with before painting?',
+        'options': [
+          'Surface preparation',
+          'Foundation depth',
+          'Steel cutting',
+          'Concrete mixing',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What is grouting commonly associated with?',
+        'options': [
+          'Filling joints',
           'Cutting steel',
-          'Making bricks',
+          'Excavating soil',
+          'Lifting cranes',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which flooring material is commonly used in buildings?',
-        options: ['Ceramic tile', 'Rebar', 'Cement bag', 'Timber formwork'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What should generally be done before painting a wall?',
-        options: [
-          'Prepare and clean the surface',
-          'Remove the foundation',
-          'Cut the reinforcement',
-          'Break the wall',
+        'answer': 0,
+      },
+      {
+        'question': 'What is a smooth wall finish useful for?',
+        'options': [
+          'Better appearance',
+          'Increasing foundation depth',
+          'Replacing columns',
+          'Increasing crane capacity',
         ],
-        correctAnswer: 0,
-      ),
+        'answer': 0,
+      },
+      {
+        'question': 'Which activity is normally part of finishing work?',
+        'options': [
+          'Painting',
+          'Excavation',
+          'Pile driving',
+          'Foundation drilling',
+        ],
+        'answer': 0,
+      },
     ],
 
     'Site Safety': [
-      QuizQuestion(
-        question: 'What does PPE stand for?',
-        options: [
-          'Personal Protective Equipment',
-          'Public Protection Equipment',
-          'Personal Project Equipment',
-          'Professional Protection Engine',
+      {
+        'question': 'Which equipment is important for protecting the head?',
+        'options': [
+          'Safety helmet',
+          'Sandals',
+          'Scarf',
+          'Watch',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which PPE protects the head?',
-        options: ['Safety helmet', 'Safety shoes', 'Gloves', 'Goggles'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which PPE protects the eyes?',
-        options: ['Safety goggles', 'Helmet', 'Safety shoes', 'Ear plugs'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Why are safety shoes used on construction sites?',
-        options: [
-          'To protect feet',
-          'To protect eyes',
-          'To protect ears',
-          'To protect the head',
+        'answer': 0,
+      },
+      {
+        'question': 'Which PPE protects the eyes?',
+        'options': [
+          'Safety goggles',
+          'Safety boots',
+          'Helmet',
+          'Gloves only',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What should be used when working at height?',
-        options: [
+        'answer': 0,
+      },
+      {
+        'question': 'What should workers use when working at height?',
+        'options': [
           'Safety harness',
-          'Paint brush',
-          'Measuring tape',
-          'Trowel',
+          'Regular shoes',
+          'Umbrella',
+          'Notebook',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is a safety barricade used for?',
-        options: [
-          'Restricting access to hazardous areas',
-          'Mixing concrete',
-          'Painting walls',
-          'Measuring buildings',
+        'answer': 0,
+      },
+      {
+        'question': 'Why are warning signs used on construction sites?',
+        'options': [
+          'To identify hazards',
+          'To decorate the site',
+          'To advertise products',
+          'To store tools',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question:
-            'What should workers do before operating unfamiliar equipment?',
-        options: [
-          'Receive proper training',
-          'Operate it immediately',
-          'Remove safety guards',
+        'answer': 0,
+      },
+      {
+        'question': 'Which footwear is appropriate on a construction site?',
+        'options': [
+          'Safety boots',
+          'Slippers',
+          'Bare feet',
+          'Sandals',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What should workers do before operating machinery?',
+        'options': [
+          'Follow safety procedures',
           'Ignore instructions',
+          'Remove guards',
+          'Run the machine immediately',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What is an important action during a fire emergency?',
-        options: [
+        'answer': 0,
+      },
+      {
+        'question': 'What should be done with a damaged electrical cable?',
+        'options': [
+          'Report and replace it',
+          'Continue using it',
+          'Hide it',
+          'Touch exposed wires',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What helps prevent slips and trips?',
+        'options': [
+          'Keeping work areas clean',
+          'Leaving tools everywhere',
+          'Blocking walkways',
+          'Ignoring spills',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'What should workers do during an emergency?',
+        'options': [
           'Follow the emergency procedure',
-          'Hide inside the building',
-          'Ignore the alarm',
+          'Panic',
+          'Ignore alarms',
           'Continue working',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Why should construction sites be kept clean?',
-        options: [
-          'To reduce accidents',
-          'To increase noise',
-          'To increase waste',
-          'To slow down work',
+        'answer': 0,
+      },
+      {
+        'question': 'Who should follow construction site safety rules?',
+        'options': [
+          'Everyone on site',
+          'Only managers',
+          'Only visitors',
+          'Only engineers',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'What should be done with damaged electrical cables?',
-        options: [
-          'Report and replace them',
-          'Continue using them',
-          'Cover them with paper',
-          'Ignore the damage',
-        ],
-        correctAnswer: 0,
-      ),
+        'answer': 0,
+      },
     ],
 
     'Tools & Machinery': [
-      QuizQuestion(
-        question: 'Which tool is commonly used to drive nails?',
-        options: ['Hammer', 'Trowel', 'Level', 'Shovel'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which tool is used to measure length?',
-        options: ['Measuring tape', 'Hammer', 'Chisel', 'Trowel'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question:
-            'Which tool is used to check whether a surface is horizontal?',
-        options: ['Spirit level', 'Hammer', 'Saw', 'Drill'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which machine is commonly used to mix concrete?',
-        options: [
+      {
+        'question': 'Which equipment is mainly used to lift heavy materials?',
+        'options': [
+          'Crane',
+          'Hammer',
+          'Trowel',
+          'Level',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which tool is commonly used to drive nails?',
+        'options': [
+          'Hammer',
+          'Trowel',
+          'Level',
+          'Drill',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which tool is used to check horizontal alignment?',
+        'options': [
+          'Spirit level',
+          'Hammer',
+          'Saw',
+          'Shovel',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which machine is commonly used for excavation?',
+        'options': [
+          'Excavator',
+          'Mixer',
+          'Crane',
+          'Generator',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which machine mixes concrete?',
+        'options': [
           'Concrete mixer',
           'Excavator',
           'Crane',
-          'Bulldozer',
+          'Compactor',
         ],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which machine is commonly used for excavation?',
-        options: ['Excavator', 'Concrete mixer', 'Generator', 'Compactor'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which machine is used to lift heavy materials?',
-        options: ['Crane', 'Trowel', 'Hammer', 'Wheelbarrow'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which tool is commonly used to cut wood?',
-        options: ['Saw', 'Level', 'Trowel', 'Wrench'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which tool is used for tightening nuts and bolts?',
-        options: ['Wrench', 'Hammer', 'Saw', 'Trowel'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question: 'Which equipment is commonly used to compact soil?',
-        options: ['Compactor', 'Crane', 'Concrete mixer', 'Drill'],
-        correctAnswer: 0,
-      ),
-      QuizQuestion(
-        question:
-            'Which machine is used to generate electrical power at a construction site?',
-        options: ['Generator', 'Excavator', 'Crane', 'Mixer'],
-        correctAnswer: 0,
-      ),
+        'answer': 0,
+      },
+      {
+        'question': 'Which tool is commonly used to apply mortar?',
+        'options': [
+          'Trowel',
+          'Hammer',
+          'Drill',
+          'Level',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which machine is used to compact soil?',
+        'options': [
+          'Compactor',
+          'Crane',
+          'Mixer',
+          'Saw',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which tool is commonly used to cut wood?',
+        'options': [
+          'Saw',
+          'Level',
+          'Trowel',
+          'Plumb bob',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which machine can be used to transport materials vertically?',
+        'options': [
+          'Hoist',
+          'Hammer',
+          'Trowel',
+          'Level',
+        ],
+        'answer': 0,
+      },
+      {
+        'question': 'Which tool can be used to make holes in concrete?',
+        'options': [
+          'Drill',
+          'Trowel',
+          'Level',
+          'Brush',
+        ],
+        'answer': 0,
+      },
     ],
   };
 
-  final Map<String, IconData> categoryIcons = {
-    'Materials': Icons.inventory_2_outlined,
-    'Structural': Icons.account_tree_outlined,
-    'Finishing': Icons.format_paint_outlined,
-    'Site Safety': Icons.health_and_safety_outlined,
-    'Tools & Machinery': Icons.construction_outlined,
-  };
-
-  List<QuizQuestion> _activeQuestions = [];
-
-  List<QuizQuestion> get currentQuestions {
-    if (selectedCategory == null) {
-      return [];
-    }
-
-    if (_activeQuestions.isNotEmpty) {
-      return _activeQuestions;
-    }
-
-    return quizData[selectedCategory] ?? [];
+  void selectAnswer(int answer) {
+    setState(() {
+      selectedAnswer = answer;
+    });
   }
 
-  void selectCategory(String category) {
+  Future<void> selectCategory(String category) async {
     setState(() {
       selectedCategory = category;
       currentQuestion = 0;
       score = 0;
       selectedAnswer = null;
-      _activeQuestions = List.from(quizData[category] ?? []);
+      currentQuestions = [];
+      isLoading = true;
     });
 
-    _loadFirestoreQuestions(category);
-  }
-
-  Future<void> _loadFirestoreQuestions(String category) async {
     try {
-      final remoteQuestions =
-          await FirestoreService().fetchQuizQuestions(category);
+      final firebaseQuestions =
+          await _firestoreService.fetchQuizQuestions(category);
 
-      if (remoteQuestions.isNotEmpty &&
-          mounted &&
-          selectedCategory == category) {
-        final mapped = remoteQuestions.map((q) {
-          int correctIdx = int.tryParse(q.correctAnswer) ?? -1;
-          if (correctIdx < 0 || correctIdx >= q.options.length) {
-            correctIdx = q.options.indexOf(q.correctAnswer);
-          }
-          if (correctIdx < 0) correctIdx = 0;
+      if (firebaseQuestions.isNotEmpty) {
+        currentQuestions = firebaseQuestions
+            .take(10)
+            .map(
+              (question) => {
+                'question': question.question,
+                'options': question.options,
+                'answer': question.correctAnswer,
+              },
+            )
+            .toList();
+      } else {
+        currentQuestions =
+            List<Map<String, dynamic>>.from(
+          localQuestions[category] ?? [],
+        );
+      }
 
-          return QuizQuestion(
-            question: q.question,
-            options: q.options,
-            correctAnswer: correctIdx,
-          );
-        }).toList();
-
-        setState(() {
-          _activeQuestions = mapped;
-        });
+      if (currentQuestions.length > 10) {
+        currentQuestions = currentQuestions.take(10).toList();
       }
     } catch (e) {
-      debugPrint('Error loading Firestore questions: $e');
-    }
-  }
+      debugPrint('Quiz loading error: $e');
 
-  void selectAnswer(int index) {
-    // User can change their answer before moving to the next question.
+      currentQuestions =
+          List<Map<String, dynamic>>.from(
+        localQuestions[category] ?? [],
+      );
+    }
+
+    if (!mounted) return;
+
     setState(() {
-      selectedAnswer = index;
+      isLoading = false;
     });
   }
 
-  void nextQuestion() {
+  void goBackToCategories() {
+    setState(() {
+      selectedCategory = null;
+      currentQuestions = [];
+      currentQuestion = 0;
+      score = 0;
+      selectedAnswer = null;
+      isLoading = false;
+    });
+  }
+
+  Future<void> nextQuestion() async {
     if (selectedAnswer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select an answer first.'),
+          content: Text('Please select an answer.'),
         ),
       );
       return;
     }
 
-    // Calculate score only when moving to the next question.
-    if (selectedAnswer == currentQuestions[currentQuestion].correctAnswer) {
+    if (selectedAnswer ==
+        currentQuestions[currentQuestion]['answer']) {
       score++;
     }
 
@@ -487,13 +629,31 @@ class _QuizPageState extends State<QuizPage> {
         selectedAnswer = null;
       });
     } else {
-      showResult();
+      await showResult();
     }
   }
 
-  void showResult() {
+  Future<void> showResult() async {
     final totalQuestions = currentQuestions.length;
-    final percentage = (score / totalQuestions) * 100;
+
+    if (totalQuestions == 0) {
+      return;
+    }
+
+    final percentage =
+        (score / totalQuestions) * 100;
+
+    try {
+      await _firestoreService.saveQuizResult(
+        category: selectedCategory!,
+        score: score,
+        totalQuestions: totalQuestions,
+      );
+    } catch (e) {
+      debugPrint('Error saving quiz result: $e');
+    }
+
+    if (!mounted) return;
 
     String message;
 
@@ -507,35 +667,21 @@ class _QuizPageState extends State<QuizPage> {
       message = 'Keep practicing and try again!';
     }
 
-    showDialog(
+    await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Center(
-            child: Text(
-              'Quiz Completed!',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          title: const Text(
+            'Quiz Completed! 🎉',
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.emoji_events_outlined,
-                size: 60,
-                color: Colors.orange,
-              ),
-              const SizedBox(height: 16),
               Text(
                 '$score / $totalQuestions',
                 style: const TextStyle(
-                  fontSize: 32,
+                  fontSize: 34,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -554,11 +700,10 @@ class _QuizPageState extends State<QuizPage> {
               ),
             ],
           ),
-          actionsAlignment: MainAxisAlignment.center,
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
 
                 setState(() {
                   currentQuestion = 0;
@@ -570,10 +715,11 @@ class _QuizPageState extends State<QuizPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
 
                 setState(() {
                   selectedCategory = null;
+                  currentQuestions = [];
                   currentQuestion = 0;
                   score = 0;
                   selectedAnswer = null;
@@ -585,15 +731,6 @@ class _QuizPageState extends State<QuizPage> {
         );
       },
     );
-  }
-
-  void goBackToCategories() {
-    setState(() {
-      selectedCategory = null;
-      currentQuestion = 0;
-      score = 0;
-      selectedAnswer = null;
-    });
   }
 
   @override
@@ -612,6 +749,25 @@ class _QuizPageState extends State<QuizPage> {
                 onPressed: goBackToCategories,
               )
             : null,
+        actions: selectedCategory == null
+            ? [
+                IconButton(
+                  tooltip: 'Quiz History',
+                  icon: const Icon(
+                    Icons.history_rounded,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const QuizHistoryPage(),
+                      ),
+                    );
+                  },
+                ),
+              ]
+            : null,
       ),
       body: selectedCategory == null
           ? _buildCategorySelection()
@@ -620,91 +776,112 @@ class _QuizPageState extends State<QuizPage> {
   }
 
   Widget _buildCategorySelection() {
-    final categories = quizData.keys.toList();
+    const categories = [
+      'Materials',
+      'Structural',
+      'Finishing',
+      'Site Safety',
+      'Tools & Machinery',
+    ];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Test Your Knowledge',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text(
+          'Choose a Category',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Select a construction category to start your quiz.',
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        ...categories.map(
+          (category) => Card(
+            margin: const EdgeInsets.only(
+              bottom: 12,
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Choose a category to start your quiz.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          const SizedBox(height: 24),
-
-          ...categories.map(
-            (category) => _buildCategoryCard(category),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(String category) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => selectCategory(category),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(13),
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 8,
+              ),
+              leading: Container(
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  categoryIcons[category],
-                  size: 30,
+                child: const Icon(
+                  Icons.quiz_outlined,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  category,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
+              title: Text(
+                category,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
-              const Icon(
+              trailing: const Icon(
                 Icons.arrow_forward_ios,
                 size: 18,
               ),
-            ],
+              onTap: isLoading
+                  ? null
+                  : () => selectCategory(category),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildQuiz() {
-    final question = currentQuestions[currentQuestion];
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
 
-    return SingleChildScrollView(
+    if (currentQuestions.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'No questions are available for this category.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final question =
+        currentQuestions[currentQuestion];
+
+    final options =
+        List<String>.from(question['options']);
+
+    return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Text(
             'Question ${currentQuestion + 1} of ${currentQuestions.length}',
@@ -714,152 +891,92 @@ class _QuizPageState extends State<QuizPage> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value:
-                  (currentQuestion + 1) / currentQuestions.length,
-              minHeight: 8,
+          LinearProgressIndicator(
+            value:
+                (currentQuestion + 1) /
+                    currentQuestions.length,
+          ),
+
+          const SizedBox(height: 30),
+
+          Text(
+            question['question'].toString(),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 25),
 
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                question.question,
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.bold,
-                  height: 1.4,
-                ),
-              ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: options.length,
+              itemBuilder: (context, index) {
+                final option = options[index];
+
+                final isSelected =
+                    selectedAnswer == index;
+
+                return Card(
+                  margin: const EdgeInsets.only(
+                    bottom: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(14),
+                    side: isSelected
+                        ? BorderSide(
+                            color: Colors.orange.shade700,
+                            width: 2,
+                          )
+                        : BorderSide.none,
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Text(
+                        String.fromCharCode(
+                          65 + index,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      option,
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(
+                            Icons.check_circle,
+                          )
+                        : null,
+                    selected: isSelected,
+                    onTap: () {
+                      selectAnswer(index);
+                    },
+                  ),
+                );
+              },
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          const Text(
-            'Choose the correct answer',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          ...List.generate(
-            question.options.length,
-            (index) => _buildOption(
-              index,
-              question.options[index],
-            ),
-          ),
-
-          const SizedBox(height: 24),
 
           SizedBox(
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
               onPressed: nextQuestion,
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
               child: Text(
-                currentQuestion == currentQuestions.length - 1
+                currentQuestion ==
+                        currentQuestions.length - 1
                     ? 'Finish Quiz'
                     : 'Next Question',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
               ),
             ),
           ),
-
-          const SizedBox(height: 20),
         ],
-      ),
-    );
-  }
-
-  Widget _buildOption(int index, String option) {
-    final isSelected = selectedAnswer == index;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => selectAnswer(index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              width: 1.5,
-              color: isSelected
-                  ? Colors.orange
-                  : Colors.grey.shade300,
-            ),
-            color: isSelected
-                ? Colors.orange.shade50
-                : Colors.white,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected
-                      ? Colors.orange
-                      : Colors.grey.shade200,
-                ),
-                child: Text(
-                  String.fromCharCode(65 + index),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  option,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (isSelected)
-                const Icon(
-                  Icons.check_circle,
-                  color: Colors.orange,
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }
