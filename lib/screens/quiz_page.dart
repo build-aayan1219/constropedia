@@ -35,11 +35,13 @@ class _QuizPageState extends State<QuizPage> {
   bool isLoading = false;
   bool isSavingResult = false;
 
-  // --------------------------------------------------
-  // CATEGORY SELECTION
-  // --------------------------------------------------
+  // ==================================================
+  // START QUIZ
+  // ==================================================
 
-  Future<void> startQuiz(String category) async {
+  Future<void> startQuiz(
+    String category,
+  ) async {
     setState(() {
       selectedCategory = category;
       isLoading = true;
@@ -51,36 +53,36 @@ class _QuizPageState extends State<QuizPage> {
 
     try {
       final loadedQuestions =
-          await _firestoreService.fetchQuizQuestions(
-        category,
-      );
+          await _firestoreService
+              .fetchQuizQuestions(category);
 
       if (!mounted) return;
 
-      if (loadedQuestions.isEmpty) {
+      if (loadedQuestions.length < 10) {
         setState(() {
           isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
           SnackBar(
             content: Text(
-              'No quiz questions found for $category.',
+              '$category has only '
+              '${loadedQuestions.length} '
+              'questions available. '
+              '10 questions are required.',
             ),
+            duration:
+                const Duration(seconds: 5),
           ),
         );
 
         return;
       }
 
-      // Keep maximum of 10 questions.
-      final quizQuestions =
-          loadedQuestions.length > 10
-              ? loadedQuestions.take(10).toList()
-              : loadedQuestions;
-
       setState(() {
-        questions = quizQuestions;
+        questions =
+            loadedQuestions.take(10).toList();
         isLoading = false;
       });
     } catch (e) {
@@ -90,12 +92,14 @@ class _QuizPageState extends State<QuizPage> {
         isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             'Unable to load quiz questions.\n$e',
           ),
-          duration: const Duration(seconds: 5),
+          duration:
+              const Duration(seconds: 6),
         ),
       );
 
@@ -105,23 +109,26 @@ class _QuizPageState extends State<QuizPage> {
     }
   }
 
-  // --------------------------------------------------
-  // ANSWER SELECTION
-  // --------------------------------------------------
+  // ==================================================
+  // SELECT / CHANGE ANSWER
+  // ==================================================
 
-  void selectAnswer(int answerIndex) {
+  void selectAnswer(
+    int answerIndex,
+  ) {
     setState(() {
       selectedAnswer = answerIndex;
     });
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // NEXT QUESTION
-  // --------------------------------------------------
+  // ==================================================
 
   Future<void> nextQuestion() async {
     if (selectedAnswer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Please select an answer.',
@@ -132,10 +139,14 @@ class _QuizPageState extends State<QuizPage> {
       return;
     }
 
-    final correctAnswer =
-        questions[currentQuestion].correctAnswer;
+    final question =
+        questions[currentQuestion];
 
-    if (selectedAnswer == correctAnswer) {
+    final selectedOption =
+        question.options[selectedAnswer!];
+
+    if (selectedOption ==
+        question.correctAnswer) {
       score++;
     }
 
@@ -152,9 +163,9 @@ class _QuizPageState extends State<QuizPage> {
     await finishQuiz();
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // FINISH QUIZ
-  // --------------------------------------------------
+  // ==================================================
 
   Future<void> finishQuiz() async {
     setState(() {
@@ -177,12 +188,15 @@ class _QuizPageState extends State<QuizPage> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
           SnackBar(
             content: Text(
-              'Quiz completed, but the result could not be saved.\n$e',
+              'Quiz completed, but the result '
+              'could not be saved.\n$e',
             ),
-            duration: const Duration(seconds: 5),
+            duration:
+                const Duration(seconds: 6),
           ),
         );
       }
@@ -195,22 +209,28 @@ class _QuizPageState extends State<QuizPage> {
     });
 
     showResult(
-      savedSuccessfully: savedSuccessfully,
+      savedSuccessfully:
+          savedSuccessfully,
     );
   }
 
-  // --------------------------------------------------
-  // RESULT
-  // --------------------------------------------------
+  // ==================================================
+  // RESULT DIALOG
+  // ==================================================
 
   void showResult({
     required bool savedSuccessfully,
   }) {
-    final totalQuestions = questions.length;
+    final totalQuestions =
+        questions.length;
 
-    final percentage = totalQuestions == 0
-        ? 0
-        : ((score / totalQuestions) * 100).round();
+    final percentage =
+        totalQuestions == 0
+            ? 0
+            : ((score /
+                        totalQuestions) *
+                    100)
+                .round();
 
     showDialog(
       context: context,
@@ -221,13 +241,15 @@ class _QuizPageState extends State<QuizPage> {
             'Quiz Completed! 🎉',
           ),
           content: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize:
+                MainAxisSize.min,
             children: [
               Text(
                 '$score / $totalQuestions',
                 style: const TextStyle(
                   fontSize: 34,
-                  fontWeight: FontWeight.bold,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
 
@@ -237,7 +259,8 @@ class _QuizPageState extends State<QuizPage> {
                 '$percentage%',
                 style: const TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.w600,
+                  fontWeight:
+                      FontWeight.w600,
                 ),
               ),
 
@@ -247,14 +270,17 @@ class _QuizPageState extends State<QuizPage> {
                 savedSuccessfully
                     ? 'Your result has been saved to Quiz History.'
                     : 'Your result could not be saved. Please check Firebase permissions.',
-                textAlign: TextAlign.center,
+                textAlign:
+                    TextAlign.center,
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(dialogContext);
+                Navigator.pop(
+                  dialogContext,
+                );
 
                 restartQuiz();
               },
@@ -262,10 +288,11 @@ class _QuizPageState extends State<QuizPage> {
                 'Try Again',
               ),
             ),
-
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(dialogContext);
+                Navigator.pop(
+                  dialogContext,
+                );
 
                 setState(() {
                   selectedCategory = null;
@@ -285,15 +312,11 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // RESTART
-  // --------------------------------------------------
+  // ==================================================
 
   void restartQuiz() {
-    if (selectedCategory == null) {
-      return;
-    }
-
     setState(() {
       currentQuestion = 0;
       score = 0;
@@ -301,13 +324,14 @@ class _QuizPageState extends State<QuizPage> {
     });
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // CATEGORY SCREEN
-  // --------------------------------------------------
+  // ==================================================
 
   Widget buildCategorySelection() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding:
+          const EdgeInsets.all(16),
       children: [
         const SizedBox(height: 8),
 
@@ -315,7 +339,8 @@ class _QuizPageState extends State<QuizPage> {
           'Choose a Category',
           style: TextStyle(
             fontSize: 24,
-            fontWeight: FontWeight.bold,
+            fontWeight:
+                FontWeight.bold,
           ),
         ),
 
@@ -333,28 +358,36 @@ class _QuizPageState extends State<QuizPage> {
         ...categories.map(
           (category) {
             return Card(
-              margin: const EdgeInsets.only(
+              margin:
+                  const EdgeInsets.only(
                 bottom: 12,
               ),
               child: ListTile(
                 contentPadding:
-                    const EdgeInsets.symmetric(
+                    const EdgeInsets
+                        .symmetric(
                   horizontal: 18,
                   vertical: 8,
                 ),
-                leading: CircleAvatar(
-                  child: const Icon(
-                    Icons.construction_rounded,
+                leading:
+                    const CircleAvatar(
+                  child: Icon(
+                    Icons
+                        .construction_rounded,
                   ),
                 ),
                 title: Text(
                   category,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+                  style:
+                      const TextStyle(
+                    fontWeight:
+                        FontWeight.bold,
                   ),
                 ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios_rounded,
+                trailing:
+                    const Icon(
+                  Icons
+                      .arrow_forward_ios_rounded,
                   size: 18,
                 ),
                 onTap: () {
@@ -368,27 +401,28 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // QUIZ SCREEN
-  // --------------------------------------------------
+  // ==================================================
 
   Widget buildQuiz() {
     final question =
         questions[currentQuestion];
 
-    final options = question.options;
-
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding:
+          const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
           Text(
             'Question ${currentQuestion + 1} of ${questions.length}',
-            style: const TextStyle(
+            style:
+                const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontWeight:
+                  FontWeight.bold,
             ),
           ),
 
@@ -404,30 +438,36 @@ class _QuizPageState extends State<QuizPage> {
 
           Text(
             question.question,
-            style: const TextStyle(
+            style:
+                const TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontWeight:
+                  FontWeight.bold,
             ),
           ),
 
           const SizedBox(height: 25),
 
           Expanded(
-            child: ListView.builder(
-              itemCount: options.length,
-              itemBuilder: (
-                context,
-                index,
-              ) {
+            child:
+                ListView.builder(
+              itemCount:
+                  question.options.length,
+              itemBuilder:
+                  (context, index) {
                 final isSelected =
-                    selectedAnswer == index;
+                    selectedAnswer ==
+                        index;
 
                 return Card(
-                  margin: const EdgeInsets.only(
+                  margin:
+                      const EdgeInsets
+                          .only(
                     bottom: 12,
                   ),
                   child: ListTile(
-                    leading: CircleAvatar(
+                    leading:
+                        CircleAvatar(
                       child: Text(
                         String.fromCharCode(
                           65 + index,
@@ -435,19 +475,26 @@ class _QuizPageState extends State<QuizPage> {
                       ),
                     ),
                     title: Text(
-                      options[index],
-                      style: const TextStyle(
+                      question
+                          .options[index],
+                      style:
+                          const TextStyle(
                         fontSize: 16,
                       ),
                     ),
-                    trailing: isSelected
-                        ? const Icon(
-                            Icons.check_circle,
-                          )
-                        : null,
-                    selected: isSelected,
+                    trailing:
+                        isSelected
+                            ? const Icon(
+                                Icons
+                                    .check_circle,
+                              )
+                            : null,
+                    selected:
+                        isSelected,
                     onTap: () {
-                      selectAnswer(index);
+                      selectAnswer(
+                        index,
+                      );
                     },
                   ),
                 );
@@ -458,27 +505,32 @@ class _QuizPageState extends State<QuizPage> {
           const SizedBox(height: 10),
 
           SizedBox(
-            width: double.infinity,
+            width:
+                double.infinity,
             height: 52,
-            child: ElevatedButton(
-              onPressed: isSavingResult
-                  ? null
-                  : nextQuestion,
-              child: isSavingResult
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
-                      child:
-                          CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text(
-                      currentQuestion ==
-                              questions.length - 1
-                          ? 'Finish Quiz'
-                          : 'Next Question',
-                    ),
+            child:
+                ElevatedButton(
+              onPressed:
+                  isSavingResult
+                      ? null
+                      : nextQuestion,
+              child:
+                  isSavingResult
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child:
+                              CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          currentQuestion ==
+                                  questions.length -
+                                      1
+                              ? 'Finish Quiz'
+                              : 'Next Question',
+                        ),
             ),
           ),
         ],
@@ -486,12 +538,14 @@ class _QuizPageState extends State<QuizPage> {
     );
   }
 
-  // --------------------------------------------------
+  // ==================================================
   // BUILD
-  // --------------------------------------------------
+  // ==================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -500,7 +554,8 @@ class _QuizPageState extends State<QuizPage> {
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(),
+              child:
+                  CircularProgressIndicator(),
             )
           : questions.isEmpty
               ? buildCategorySelection()
