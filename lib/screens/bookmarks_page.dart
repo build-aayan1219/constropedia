@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/article.dart';
 import '../services/firestore_service.dart';
 import 'article_page.dart';
@@ -8,7 +9,8 @@ class BookmarksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final FirestoreService firestoreService = FirestoreService();
+    final FirestoreService firestoreService =
+        FirestoreService();
 
     return Scaffold(
       appBar: AppBar(
@@ -22,56 +24,25 @@ class BookmarksPage extends StatelessWidget {
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: firestoreService.getBookmarks(),
         builder: (context, snapshot) {
-          // Loading state
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState ==
+              ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
 
-          // Error state
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 60,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Unable to load bookmarks',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Please check your connection and try again.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return _buildErrorState(
+              snapshot.error.toString(),
             );
           }
 
-          final List<Map<String, dynamic>> bookmarks =
-              snapshot.data ?? [];
+          final bookmarks = snapshot.data ?? [];
 
-          // Empty state
           if (bookmarks.isEmpty) {
             return _buildEmptyState();
           }
 
-          // Bookmark list
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: bookmarks.length,
@@ -81,12 +52,25 @@ class BookmarksPage extends StatelessWidget {
               final bookmark = bookmarks[index];
 
               final Article article = Article(
-                id: bookmark['articleId'] ?? bookmark['id'] ?? '',
-                title: bookmark['title'] ?? '',
-                description: bookmark['description'] ?? '',
-                content: bookmark['content'] ?? '',
-                category: bookmark['category'] ?? '',
-                imageUrl: bookmark['imageUrl'],
+                id: _stringValue(
+                  bookmark['articleId'] ??
+                      bookmark['id'],
+                ),
+                title: _stringValue(
+                  bookmark['title'],
+                ),
+                description: _stringValue(
+                  bookmark['description'],
+                ),
+                content: _stringValue(
+                  bookmark['content'],
+                ),
+                category: _stringValue(
+                  bookmark['category'],
+                ),
+                imageUrl: _nullableString(
+                  bookmark['imageUrl'],
+                ),
                 createdAt: bookmark['createdAt'],
               );
 
@@ -99,6 +83,28 @@ class BookmarksPage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  String _stringValue(dynamic value) {
+    if (value == null) {
+      return '';
+    }
+
+    return value.toString();
+  }
+
+  String? _nullableString(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return null;
+    }
+
+    return text;
   }
 
   Widget _buildBookmarkCard(
@@ -126,12 +132,15 @@ class BookmarksPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius:
+                      BorderRadius.circular(14),
                 ),
                 child: const Icon(
                   Icons.bookmark_rounded,
@@ -143,10 +152,13 @@ class BookmarksPage extends StatelessWidget {
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     Text(
                       article.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -156,15 +168,29 @@ class BookmarksPage extends StatelessWidget {
                     const SizedBox(height: 6),
 
                     Text(
-                      article.description,
+                      article.description.isNotEmpty
+                          ? article.description
+                          : 'No description available.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey,
+                        color: Colors.grey.shade700,
                         height: 1.4,
                       ),
                     ),
+
+                    const SizedBox(height: 8),
+
+                    if (article.category.isNotEmpty)
+                      Text(
+                        article.category,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade800,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -187,7 +213,8 @@ class BookmarksPage extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
             Icon(
               Icons.bookmark_border_rounded,
@@ -214,6 +241,55 @@ class BookmarksPage extends StatelessWidget {
                 fontSize: 14,
                 color: Colors.grey.shade600,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment:
+              MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 60,
+            ),
+
+            const SizedBox(height: 16),
+
+            const Text(
+              'Unable to load bookmarks',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.refresh_rounded,
+              ),
+              label: const Text('Retry'),
             ),
           ],
         ),

@@ -13,13 +13,19 @@ class QuizQuestionModel {
     required this.category,
   });
 
-  factory QuizQuestionModel.fromMap(String id, Map<String, dynamic> data) {
+  factory QuizQuestionModel.fromMap(
+    String id,
+    Map<String, dynamic> data,
+  ) {
     return QuizQuestionModel(
       id: id,
-      question: data['question'] ?? '',
-      options: List<String>.from(data['options'] ?? const []),
-      correctAnswer: data['correctAnswer']?.toString() ?? '',
-      category: data['category'] ?? '',
+      question: data['question']?.toString() ?? '',
+      options: List<String>.from(
+        data['options'] ?? const [],
+      ),
+      correctAnswer:
+          data['correctAnswer']?.toString() ?? '',
+      category: data['category']?.toString() ?? '',
     );
   }
 
