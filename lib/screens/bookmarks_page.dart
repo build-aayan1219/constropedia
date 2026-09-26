@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../models/article.dart';
 import '../services/firestore_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/article_card.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
+import '../widgets/loading_widget.dart';
 import 'article_page.dart';
 
 class BookmarksPage extends StatelessWidget {
@@ -9,52 +15,56 @@ class BookmarksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final FirestoreService firestoreService =
-        FirestoreService();
+    final FirestoreService firestoreService = FirestoreService();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Bookmarks',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      backgroundColor: AppColors.background,
+      appBar: const CustomAppBar(
+        title: 'Saved Bookmarks',
+        subtitle: 'Personal Construction Reading List',
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: firestoreService.getBookmarks(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return ListView.builder(
+              padding: const EdgeInsets.all(18),
+              itemCount: 3,
+              itemBuilder: (context, index) => const ArticleCardSkeleton(),
             );
           }
 
           if (snapshot.hasError) {
-            return _buildErrorState(
-              snapshot.error.toString(),
+            return ErrorStateWidget(
+              message:
+                  'Unable to load your saved bookmarks. Please check your network connection.',
             );
           }
 
           final bookmarks = snapshot.data ?? [];
 
           if (bookmarks.isEmpty) {
-            return _buildEmptyState();
+            return EmptyStateWidget(
+              icon: Icons.bookmark_border_rounded,
+              title: 'No Bookmarks Yet',
+              message:
+                  'Save useful articles and technical construction references to quickly access them here anytime.',
+              buttonLabel: 'Explore Encyclopedia',
+              onButtonPressed: () {
+                Navigator.pop(context);
+              },
+            );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
+          return ListView.builder(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
             itemCount: bookmarks.length,
-            separatorBuilder: (context, index) =>
-                const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final bookmark = bookmarks[index];
 
               final Article article = Article(
                 id: _stringValue(
-                  bookmark['articleId'] ??
-                      bookmark['id'],
+                  bookmark['articleId'] ?? bookmark['id'],
                 ),
                 title: _stringValue(
                   bookmark['title'],
@@ -74,9 +84,33 @@ class BookmarksPage extends StatelessWidget {
                 createdAt: bookmark['createdAt'],
               );
 
-              return _buildBookmarkCard(
-                context,
-                article,
+              return ArticleCard(
+                article: article,
+                trailing: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySubtle,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.primaryBorder.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.bookmark_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ArticlePage(
+                        article: article,
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
@@ -89,7 +123,6 @@ class BookmarksPage extends StatelessWidget {
     if (value == null) {
       return '';
     }
-
     return value.toString();
   }
 
@@ -97,203 +130,10 @@ class BookmarksPage extends StatelessWidget {
     if (value == null) {
       return null;
     }
-
     final text = value.toString().trim();
-
     if (text.isEmpty) {
       return null;
     }
-
     return text;
-  }
-
-  Widget _buildBookmarkCard(
-    BuildContext context,
-    Article article,
-  ) {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ArticlePage(
-                article: article,
-              ),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius:
-                      BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.bookmark_rounded,
-                  size: 28,
-                ),
-              ),
-
-              const SizedBox(width: 16),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      article.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Text(
-                      article.description.isNotEmpty
-                          ? article.description
-                          : 'No description available.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    if (article.category.isNotEmpty)
-                      Text(
-                        article.category,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.orange.shade800,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.bookmark_border_rounded,
-              size: 70,
-              color: Colors.grey.shade400,
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              'No Bookmarks Yet',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              'Save articles you want to read later.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              size: 60,
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              'Unable to load bookmarks',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.refresh_rounded,
-              ),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

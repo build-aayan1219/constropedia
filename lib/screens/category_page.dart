@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-
 import '../models/article.dart';
 import '../services/firestore_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/article_card.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/loading_widget.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
 import 'article_page.dart';
 
 class CategoryPage extends StatelessWidget {
@@ -12,62 +17,65 @@ class CategoryPage extends StatelessWidget {
     required this.categoryName,
   });
 
+  IconData _getCategoryIcon(String category) {
+    final cat = category.toLowerCase().trim();
+    if (cat.contains('material')) return Icons.construction_rounded;
+    if (cat.contains('structur')) return Icons.account_tree_rounded;
+    if (cat.contains('finish')) return Icons.format_paint_rounded;
+    if (cat.contains('safety')) return Icons.health_and_safety_rounded;
+    if (cat.contains('tool') || cat.contains('machin')) {
+      return Icons.engineering_rounded;
+    }
+    return Icons.menu_book_rounded;
+  }
+
+  String _getCategoryDescription(String category) {
+    final cat = category.toLowerCase().trim();
+    if (cat.contains('material')) {
+      return 'Core building materials, cements, masonry, composites, and reinforcements.';
+    }
+    if (cat.contains('structur')) {
+      return 'Load-bearing elements, foundations, columns, beams, slabs, and frameworks.';
+    }
+    if (cat.contains('finish')) {
+      return 'Architectural coatings, plasters, tiles, screeds, and interior finishes.';
+    }
+    if (cat.contains('safety')) {
+      return 'On-site protocols, personal protective equipment (PPE), and hazard prevention.';
+    }
+    if (cat.contains('tool') || cat.contains('machin')) {
+      return 'Construction machinery, surveying instruments, mixing plants, and power tools.';
+    }
+    return 'Comprehensive construction reference material and technical guidance.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final FirestoreService firestoreService = FirestoreService();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          categoryName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(
+        title: categoryName,
+        subtitle: 'Construction Encyclopedia',
       ),
       body: StreamBuilder<List<Article>>(
-        stream: firestoreService.getArticlesByCategory(
-          categoryName,
-        ),
+        stream: firestoreService.getArticlesByCategory(categoryName),
         builder: (context, snapshot) {
           // Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
+            return ListView.builder(
+              padding: const EdgeInsets.all(18),
+              itemCount: 4,
+              itemBuilder: (context, index) => const ArticleCardSkeleton(),
             );
           }
 
           // Error
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 55,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Unable to load articles',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Please check your internet connection and try again.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return ErrorStateWidget(
+              message:
+                  'We were unable to load articles for $categoryName. Please check your internet connection.',
             );
           }
 
@@ -75,145 +83,117 @@ class CategoryPage extends StatelessWidget {
 
           // Empty category
           if (articles.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.menu_book_outlined,
-                      size: 65,
-                      color: Colors.orange.shade300,
+            return EmptyStateWidget(
+              icon: _getCategoryIcon(categoryName),
+              title: 'No Articles in $categoryName',
+              message:
+                  'There are currently no articles indexed under this category. Please check back later or explore other categories.',
+            );
+          }
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
+            children: [
+              // CATEGORY HEADER HERO
+              Container(
+                padding: const EdgeInsets.all(18),
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No articles available',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySubtle,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.primaryBorder.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Icon(
+                        _getCategoryIcon(categoryName),
+                        size: 32,
+                        color: AppColors.primary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'There are no articles in this category yet.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                categoryName,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceMuted,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${articles.length} Topics',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _getCategoryDescription(categoryName),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            );
-          }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: articles.length,
-            itemBuilder: (context, index) {
-              final article = articles[index];
-
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
+              // ARTICLES LIST
+              ...articles.map(
+                (article) => ArticleCard(
+                  article: article,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ArticlePage(
-                          article: article,
-                        ),
+                        builder: (_) => ArticlePage(article: article),
                       ),
                     );
                   },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(
-                            Icons.menu_book_rounded,
-                            size: 28,
-                          ),
-                        ),
-
-                        const SizedBox(width: 14),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                article.title,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              Text(
-                                article.description,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.4,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-
-                              const SizedBox(height: 10),
-
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.category_outlined,
-                                    size: 15,
-                                    color: Colors.orange.shade800,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    article.category,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.orange.shade800,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),

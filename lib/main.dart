@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'firebase_options.dart';
+import 'theme/app_theme.dart';
+import 'widgets/loading_widget.dart';
 import 'screens/signup_page.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
@@ -25,29 +27,19 @@ class ConstropediaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Constropedia',
-
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.orange,
-        ),
-        useMaterial3: true,
-      ),
-
+      theme: AppTheme.lightTheme,
       routes: {
         '/signup': (context) => const SignupPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),
       },
-
       home: const AuthGate(),
     );
   }
 }
 
 /// Decides which screen should be shown when the app starts.
-///
-/// FirebaseAuth automatically keeps track of the current
-/// authentication state.
+/// FirebaseAuth automatically keeps track of the current authentication state.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -58,10 +50,9 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         // Firebase is checking the current authentication state.
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+          return const LoadingWidget(
+            isFullScreen: true,
+            message: 'Starting Constropedia...',
           );
         }
 
