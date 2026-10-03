@@ -14,7 +14,7 @@ class CategoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final FirestoreService firestoreService = FirestoreService();
+    final firestoreService = FirestoreService();
 
     return Scaffold(
       appBar: AppBar(
@@ -25,19 +25,15 @@ class CategoryPage extends StatelessWidget {
           ),
         ),
       ),
-      body: StreamBuilder<List<Article>>(
-        stream: firestoreService.getArticlesByCategory(
-          categoryName,
-        ),
+      body: FutureBuilder<List<Article>>(
+        future: firestoreService.getArticlesByCategory(categoryName),
         builder: (context, snapshot) {
-          // Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
 
-          // Error
           if (snapshot.hasError) {
             return Center(
               child: Padding(
@@ -59,11 +55,8 @@ class CategoryPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Please check your internet connection and try again.',
+                      '${snapshot.error}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
                     ),
                   ],
                 ),
@@ -73,7 +66,6 @@ class CategoryPage extends StatelessWidget {
 
           final articles = snapshot.data ?? [];
 
-          // Empty category
           if (articles.isEmpty) {
             return Center(
               child: Padding(
@@ -99,7 +91,6 @@ class CategoryPage extends StatelessWidget {
                       'There are no articles in this category yet.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 14,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -136,22 +127,22 @@ class CategoryPage extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.orange.shade100,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius:
+                                BorderRadius.circular(14),
                           ),
                           child: const Icon(
                             Icons.menu_book_rounded,
                             size: 28,
                           ),
                         ),
-
                         const SizedBox(width: 14),
-
                         Expanded(
                           child: Column(
                             crossAxisAlignment:
@@ -164,36 +155,37 @@ class CategoryPage extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-
                               const SizedBox(height: 6),
-
                               Text(
                                 article.description,
                                 maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                                overflow:
+                                    TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 14,
                                   height: 1.4,
-                                  color: Colors.grey.shade700,
+                                  color:
+                                      Colors.grey.shade700,
                                 ),
                               ),
-
                               const SizedBox(height: 10),
-
                               Row(
                                 children: [
                                   Icon(
                                     Icons.category_outlined,
                                     size: 15,
-                                    color: Colors.orange.shade800,
+                                    color:
+                                        Colors.orange.shade800,
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
                                     article.category,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.orange.shade800,
+                                      fontWeight:
+                                          FontWeight.w600,
+                                      color:
+                                          Colors.orange.shade800,
                                     ),
                                   ),
                                 ],
@@ -201,9 +193,7 @@ class CategoryPage extends StatelessWidget {
                             ],
                           ),
                         ),
-
                         const SizedBox(width: 8),
-
                         const Icon(
                           Icons.arrow_forward_ios_rounded,
                           size: 16,
