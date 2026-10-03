@@ -38,10 +38,7 @@ class FirestoreService {
       throw Exception('User is not logged in');
     }
 
-    return await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .get();
+    return await _firestore.collection('users').doc(user.uid).get();
   }
 
   // ==================================================
@@ -69,9 +66,7 @@ class FirestoreService {
         '${e.code} - ${e.message}',
       );
     } catch (e) {
-      debugPrint(
-        'Error checking initial article data: $e',
-      );
+      debugPrint('Error checking initial article data: $e');
     }
   }
 
@@ -86,39 +81,22 @@ class FirestoreService {
         .get();
 
     return snapshot.docs
-        .map(
-          (doc) => Article.fromMap(
-            doc.id,
-            doc.data(),
-          ),
-        )
+        .map((doc) => Article.fromMap(doc.id, doc.data()))
         .toList();
   }
 
-Future<List<Article>> getArticlesByCategory(
-  String category,
-) async {
-  final snapshot = await _firestore
-      .collection('articles')
-      .where(
-        'category',
-        isEqualTo: category,
-      )
-      .get();
+  Future<List<Article>> getArticlesByCategory(String category) async {
+    final snapshot = await _firestore
+        .collection('articles')
+        .where('category', isEqualTo: category)
+        .get();
 
-  return snapshot.docs
-      .map(
-        (doc) => Article.fromMap(
-          doc.id,
-          doc.data(),
-        ),
-      )
-      .toList();
-}
+    return snapshot.docs
+        .map((doc) => Article.fromMap(doc.id, doc.data()))
+        .toList();
+  }
 
-  Future<Article?> getArticleById(
-    String articleId,
-  ) async {
+  Future<Article?> getArticleById(String articleId) async {
     final document = await _firestore
         .collection('articles')
         .doc(articleId)
@@ -128,19 +106,14 @@ Future<List<Article>> getArticlesByCategory(
       return null;
     }
 
-    return Article.fromMap(
-      document.id,
-      document.data()!,
-    );
+    return Article.fromMap(document.id, document.data()!);
   }
 
   // ==================================================
   // SEARCH
   // ==================================================
 
-  Future<List<Article>> searchArticles(
-    String searchText,
-  ) async {
+  Future<List<Article>> searchArticles(String searchText) async {
     final query = searchText.trim().toLowerCase();
 
     if (query.isEmpty) {
@@ -153,18 +126,11 @@ Future<List<Article>> getArticlesByCategory(
         .get();
 
     return snapshot.docs
-        .map(
-          (doc) => Article.fromMap(
-            doc.id,
-            doc.data(),
-          ),
-        )
+        .map((doc) => Article.fromMap(doc.id, doc.data()))
         .where(
           (article) =>
               article.title.toLowerCase().contains(query) ||
-              article.description
-                  .toLowerCase()
-                  .contains(query) ||
+              article.description.toLowerCase().contains(query) ||
               article.content.toLowerCase().contains(query) ||
               article.category.toLowerCase().contains(query),
         )
@@ -195,13 +161,13 @@ Future<List<Article>> getArticlesByCategory(
         .collection('bookmarks')
         .doc(title)
         .set({
-      'title': title,
-      'description': description,
-      'content': content,
-      'category': category,
-      'imageUrl': imageUrl ?? '',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+          'title': title,
+          'description': description,
+          'content': content,
+          'category': category,
+          'imageUrl': imageUrl ?? '',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
   }
 
   Future<void> removeBookmark({
@@ -222,10 +188,7 @@ Future<List<Article>> getArticlesByCategory(
         .delete();
   }
 
-  Future<bool> isBookmarked({
-    String? articleId,
-    required String title,
-  }) async {
+  Future<bool> isBookmarked({String? articleId, required String title}) async {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -253,19 +216,11 @@ Future<List<Article>> getArticlesByCategory(
         .collection('users')
         .doc(user.uid)
         .collection('bookmarks')
-        .orderBy(
-          'createdAt',
-          descending: true,
-        )
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map(
-                (doc) => {
-                  'id': doc.id,
-                  ...doc.data(),
-                },
-              )
+              .map((doc) => {'id': doc.id, ...doc.data()})
               .toList(),
         );
   }
@@ -288,10 +243,7 @@ Future<List<Article>> getArticlesByCategory(
       return null;
     }
 
-    return ConcreteMixtureRecord.fromMap(
-      snapshot.id,
-      snapshot.data()!,
-    );
+    return ConcreteMixtureRecord.fromMap(snapshot.id, snapshot.data()!);
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getMixtureDataSnapshot({
@@ -325,12 +277,7 @@ Future<List<Article>> getArticlesByCategory(
     );
 
     return snapshot.docs
-        .map(
-          (doc) => ConcreteMixtureRecord.fromMap(
-            doc.id,
-            doc.data(),
-          ),
-        )
+        .map((doc) => ConcreteMixtureRecord.fromMap(doc.id, doc.data()))
         .toList();
   }
 
@@ -339,8 +286,9 @@ Future<List<Article>> getArticlesByCategory(
   // ==================================================
 
   Future<List<QuizQuestionModel>> fetchQuizQuestions(
-    String category,
-  ) async {
+  String category,
+) async {
+  try {
     final snapshot = await _firestore
         .collection('quizQuestions')
         .where(
@@ -349,7 +297,7 @@ Future<List<Article>> getArticlesByCategory(
         )
         .get();
 
-    return snapshot.docs
+    final questions = snapshot.docs
         .map(
           (doc) => QuizQuestionModel.fromMap(
             doc.id,
@@ -357,7 +305,33 @@ Future<List<Article>> getArticlesByCategory(
           ),
         )
         .toList();
+
+    questions.shuffle();
+
+    // The quiz requires 10 questions.
+    if (questions.length < 10) {
+      debugPrint(
+        'Only ${questions.length} quiz questions found '
+        'for category: $category',
+      );
+    }
+
+    return questions.take(10).toList();
+  } on FirebaseException catch (e) {
+    debugPrint(
+      'Quiz question loading error: '
+      '${e.code} - ${e.message}',
+    );
+
+    rethrow;
+  } catch (e) {
+    debugPrint(
+      'Quiz question loading error: $e',
+    );
+
+    rethrow;
   }
+}
 
   // ==================================================
   // QUIZ HISTORY
@@ -379,14 +353,14 @@ Future<List<Article>> getArticlesByCategory(
         .doc(user.uid)
         .collection('quizHistory')
         .add({
-      'category': category,
-      'score': score,
-      'totalQuestions': totalQuestions,
-      'percentage': totalQuestions == 0
-          ? 0
-          : ((score / totalQuestions) * 100).round(),
-      'completedAt': FieldValue.serverTimestamp(),
-    });
+          'category': category,
+          'score': score,
+          'totalQuestions': totalQuestions,
+          'percentage': totalQuestions == 0
+              ? 0
+              : ((score / totalQuestions) * 100).round(),
+          'completedAt': FieldValue.serverTimestamp(),
+        });
   }
 
   Stream<List<Map<String, dynamic>>> getQuizHistory() {
@@ -400,19 +374,11 @@ Future<List<Article>> getArticlesByCategory(
         .collection('users')
         .doc(user.uid)
         .collection('quizHistory')
-        .orderBy(
-          'completedAt',
-          descending: true,
-        )
+        .orderBy('completedAt', descending: true)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map(
-                (doc) => {
-                  'id': doc.id,
-                  ...doc.data(),
-                },
-              )
+              .map((doc) => {'id': doc.id, ...doc.data()})
               .toList(),
         );
   }
