@@ -12,6 +12,12 @@ service cloud.firestore {
         // Authenticated users can only read and write their own bookmarks
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // QUIZ HISTORY SUBCOLLECTION
+      match /quizHistory/{attemptId} {
+        // Users can only read and create/update/delete their own quiz history
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // ARTICLES COLLECTION
