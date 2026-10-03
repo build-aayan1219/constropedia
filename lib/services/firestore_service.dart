@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/article.dart';
 import '../models/quiz_question.dart';
+import '../models/mixture_record.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore =
@@ -112,70 +113,72 @@ class FirestoreService {
   // BOOKMARKS
   // ==================================================
 
-  Future<void> addBookmark({
-    required String title,
-    required String description,
-    String content = '',
-    String category = '',
-    String imageUrl = '',
-  }) async {
-    final user = _auth.currentUser;
+Future<void> addBookmark({
+  String? articleId,
+  required String title,
+  required String description,
+  String content = '',
+  String category = '',
+  String? imageUrl,
+}) async {
+  final user = _auth.currentUser;
 
-    if (user == null) {
-      throw Exception('User is not logged in');
-    }
-
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('bookmarks')
-        .doc(title)
-        .set({
-      'title': title,
-      'description': description,
-      'content': content,
-      'category': category,
-      'imageUrl': imageUrl,
-      'createdAt':
-          FieldValue.serverTimestamp(),
-    });
+  if (user == null) {
+    throw Exception('User is not logged in');
   }
 
-  Future<void> removeBookmark({
-    required String title,
-  }) async {
-    final user = _auth.currentUser;
+  await _firestore
+      .collection('users')
+      .doc(user.uid)
+      .collection('bookmarks')
+      .doc(title)
+      .set({
+    'title': title,
+    'description': description,
+    'content': content,
+    'category': category,
+    'imageUrl': imageUrl ?? '',
+    'createdAt': FieldValue.serverTimestamp(),
+  });
+}
 
-    if (user == null) {
-      throw Exception('User is not logged in');
-    }
+Future<void> removeBookmark({
+  String? articleId,
+  required String title,
+}) async {
+  final user = _auth.currentUser;
 
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('bookmarks')
-        .doc(title)
-        .delete();
+  if (user == null) {
+    throw Exception('User is not logged in');
   }
 
-  Future<bool> isBookmarked({
-    required String title,
-  }) async {
-    final user = _auth.currentUser;
+  await _firestore
+      .collection('users')
+      .doc(user.uid)
+      .collection('bookmarks')
+      .doc(title)
+      .delete();
+}
 
-    if (user == null) {
-      return false;
-    }
+Future<bool> isBookmarked({
+  String? articleId,
+  required String title,
+}) async {
+  final user = _auth.currentUser;
 
-    final document = await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('bookmarks')
-        .doc(title)
-        .get();
-
-    return document.exists;
+  if (user == null) {
+    return false;
   }
+
+  final document = await _firestore
+      .collection('users')
+      .doc(user.uid)
+      .collection('bookmarks')
+      .doc(title)
+      .get();
+
+  return document.exists;
+}
 
   Stream<List<Map<String, dynamic>>>
       getBookmarks() {
@@ -205,6 +208,70 @@ class FirestoreService {
               .toList(),
         );
   }
+
+// ==================================================
+// CONCRETE MIXTURE DATA
+// ==================================================
+
+Future<ConcreteMixtureRecord?> getSampleMixtureRecord({
+  String articleId = 'cement',
+}) async {
+  final snapshot = await _firestore
+      .collection('articles')
+      .doc(articleId)
+      .collection('mixtureData')
+      .doc('record001')
+      .get();
+
+  if (!snapshot.exists || snapshot.data() == null) {
+    return null;
+  }
+
+  return ConcreteMixtureRecord.fromMap(
+    snapshot.id,
+    snapshot.data()!,
+  );
+}
+
+Future<QuerySnapshot<Map<String, dynamic>>> getMixtureDataSnapshot({
+  int limit = 20,
+  DocumentSnapshot? startAfter,
+  String articleId = 'cement',
+}) async {
+  Query<Map<String, dynamic>> query = _firestore
+      .collection('articles')
+      .doc(articleId)
+      .collection('mixtureData')
+      .orderBy('recordId')
+      .limit(limit);
+
+  if (startAfter != null) {
+    query = query.startAfterDocument(startAfter);
+  }
+
+  return await query.get();
+}
+
+Future<List<ConcreteMixtureRecord>> getCementMixtureData({
+  int limit = 20,
+  DocumentSnapshot? startAfter,
+  String articleId = 'cement',
+}) async {
+  final snapshot = await getMixtureDataSnapshot(
+    articleId: articleId,
+    limit: limit,
+    startAfter: startAfter,
+  );
+
+  return snapshot.docs
+      .map(
+        (doc) => ConcreteMixtureRecord.fromMap(
+          doc.id,
+          doc.data(),
+        ),
+      )
+      .toList();
+}
 
   // ==================================================
   // QUIZ QUESTIONS
