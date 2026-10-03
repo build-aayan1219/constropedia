@@ -95,27 +95,26 @@ class FirestoreService {
         .toList();
   }
 
-  Future<List<Article>> getArticlesByCategory(
-    String category,
-  ) async {
-    final snapshot = await _firestore
-        .collection('articles')
-        .where(
-          'category',
-          isEqualTo: category,
-        )
-        .orderBy('createdAt', descending: true)
-        .get();
+Future<List<Article>> getArticlesByCategory(
+  String category,
+) async {
+  final snapshot = await _firestore
+      .collection('articles')
+      .where(
+        'category',
+        isEqualTo: category,
+      )
+      .get();
 
-    return snapshot.docs
-        .map(
-          (doc) => Article.fromMap(
-            doc.id,
-            doc.data(),
-          ),
-        )
-        .toList();
-  }
+  return snapshot.docs
+      .map(
+        (doc) => Article.fromMap(
+          doc.id,
+          doc.data(),
+        ),
+      )
+      .toList();
+}
 
   Future<Article?> getArticleById(
     String articleId,
