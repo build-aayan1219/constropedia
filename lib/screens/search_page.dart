@@ -12,81 +12,86 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final TextEditingController searchController =
+  final FirestoreService _firestoreService = FirestoreService();
+  final TextEditingController _searchController =
       TextEditingController();
 
-  final FirestoreService firestoreService = FirestoreService();
-
-  String searchText = '';
+  List<Article> _articles = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  String _searchQuery = '';
 
   @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
+  void initState() {
+    super.initState();
+    _loadArticles();
 
-  void performSearch(String value) {
-    setState(() {
-      searchText = value.trim().toLowerCase();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim().toLowerCase();
+      });
     });
   }
 
-  List<Article> filterArticles(List<Article> articles) {
-    if (searchText.isEmpty) {
-      return articles;
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadArticles() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final articles = await _firestoreService.getArticles();
+
+      if (!mounted) return;
+
+      setState(() {
+        _articles = articles;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+
+      debugPrint('Search article loading error: $e');
+    }
+  }
+
+  List<Article> get _filteredArticles {
+    if (_searchQuery.isEmpty) {
+      return _articles;
     }
 
-    final results = articles.where((article) {
+    return _articles.where((article) {
       final title = article.title.toLowerCase();
       final description = article.description.toLowerCase();
       final content = article.content.toLowerCase();
       final category = article.category.toLowerCase();
 
-      return title.contains(searchText) ||
-          description.contains(searchText) ||
-          content.contains(searchText) ||
-          category.contains(searchText);
+      return title.contains(_searchQuery) ||
+          description.contains(_searchQuery) ||
+          content.contains(_searchQuery) ||
+          category.contains(_searchQuery);
     }).toList();
-
-    // Exact title matches first.
-    results.sort((a, b) {
-      final aTitle = a.title.toLowerCase();
-      final bTitle = b.title.toLowerCase();
-
-      final aExact = aTitle == searchText;
-      final bExact = bTitle == searchText;
-
-      if (aExact && !bExact) {
-        return -1;
-      }
-
-      if (!aExact && bExact) {
-        return 1;
-      }
-
-      final aStarts = aTitle.startsWith(searchText);
-      final bStarts = bTitle.startsWith(searchText);
-
-      if (aStarts && !bStarts) {
-        return -1;
-      }
-
-      if (!aStarts && bStarts) {
-        return 1;
-      }
-
-      return aTitle.compareTo(bTitle);
-    });
-
-    return results;
   }
 
   @override
   Widget build(BuildContext context) {
+    final results = _filteredArticles;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Search Articles',
+          'Search',
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
@@ -99,34 +104,33 @@ class _SearchPageState extends State<SearchPage> {
               16,
               16,
               16,
-              10,
+              12,
             ),
             child: TextField(
-              controller: searchController,
-              onChanged: performSearch,
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Search construction terms...',
                 prefixIcon: const Icon(
                   Icons.search_rounded,
                 ),
-                suffixIcon: searchController.text.isNotEmpty
+                suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        tooltip: 'Clear search',
-                        onPressed: () {
-                          searchController.clear();
-
-                          setState(() {
-                            searchText = '';
-                          });
-                        },
+                        tooltip: 'Clear',
                         icon: const Icon(
                           Icons.clear_rounded,
                         ),
+                        onPressed: () {
+                          _searchController.clear();
+                        },
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
@@ -142,63 +146,49 @@ class _SearchPageState extends State<SearchPage> {
           ),
 
           Expanded(
-            child: StreamBuilder<List<Article>>(
-              stream: firestoreService.getArticles(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return _buildErrorState(
-                    snapshot.error.toString(),
-                  );
-                }
-
-                final articles = snapshot.data ?? [];
-                final searchResults = filterArticles(articles);
-
-                if (searchResults.isEmpty) {
-                  return _buildEmptyState();
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    6,
-                    16,
-                    16,
-                  ),
-                  itemCount: searchResults.length,
-                  itemBuilder: (context, index) {
-                    final article = searchResults[index];
-
-                    return _buildArticleCard(
-                      context,
-                      article,
-                    );
-                  },
-                );
-              },
-            ),
+            child: _buildBody(results),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildArticleCard(
-    BuildContext context,
-    Article article,
-  ) {
+  Widget _buildBody(List<Article> results) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    if (results.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        4,
+        16,
+        20,
+      ),
+      itemCount: results.length,
+      separatorBuilder: (context, index) {
+        return const SizedBox(height: 12);
+      },
+      itemBuilder: (context, index) {
+        return _buildArticleCard(results[index]);
+      },
+    );
+  }
+
+  Widget _buildArticleCard(Article article) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -217,10 +207,12 @@ class _SearchPageState extends State<SearchPage> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
                   borderRadius: BorderRadius.circular(14),
@@ -230,9 +222,7 @@ class _SearchPageState extends State<SearchPage> {
                   size: 28,
                 ),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment:
@@ -240,17 +230,17 @@ class _SearchPageState extends State<SearchPage> {
                   children: [
                     Text(
                       article.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 6),
-
                     Text(
                       article.description,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 14,
@@ -258,36 +248,29 @@ class _SearchPageState extends State<SearchPage> {
                         color: Colors.grey.shade700,
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.category_outlined,
-                          size: 15,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        article.category,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: Colors.orange.shade800,
                         ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            article.category,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.orange.shade800,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
-
               const Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
@@ -300,38 +283,37 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildEmptyState() {
+    final hasSearchText = _searchQuery.isNotEmpty;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
             Icon(
-              searchText.isEmpty
-                  ? Icons.menu_book_outlined
-                  : Icons.search_off_rounded,
-              size: 65,
+              hasSearchText
+                  ? Icons.search_off_rounded
+                  : Icons.menu_book_outlined,
+              size: 70,
               color: Colors.orange.shade300,
             ),
-
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 18),
             Text(
-              searchText.isEmpty
-                  ? 'No articles available'
-                  : 'No articles found',
+              hasSearchText
+                  ? 'No articles found'
+                  : 'No articles available',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
-              searchText.isEmpty
-                  ? 'There are no articles available yet.'
-                  : 'Try a different construction term.',
+              hasSearchText
+                  ? 'Try searching for another construction term.'
+                  : 'There are no articles available right now.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -344,49 +326,42 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildErrorState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
             const Icon(
               Icons.error_outline_rounded,
-              size: 55,
+              size: 60,
             ),
-
             const SizedBox(height: 16),
-
             const Text(
               'Unable to load articles',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 19,
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
-              error,
+              _errorMessage ?? 'Unknown error',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade600,
+                color: Colors.grey.shade700,
               ),
             ),
-
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 18),
             ElevatedButton.icon(
-              onPressed: () {
-                setState(() {});
-              },
+              onPressed: _loadArticles,
               icon: const Icon(
                 Icons.refresh_rounded,
               ),
-              label: const Text('Retry'),
+              label: const Text('Try Again'),
             ),
           ],
         ),
