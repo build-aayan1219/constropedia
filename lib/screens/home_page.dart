@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/firestore_service.dart';
 import 'bookmarks_page.dart';
 import 'search_page.dart';
 import 'quiz_page.dart';
@@ -15,12 +14,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    FirestoreService().seedInitialDataIfNeeded();
-  }
-
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
