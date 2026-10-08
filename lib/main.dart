@@ -6,6 +6,8 @@ import 'firebase_options.dart';
 import 'screens/signup_page.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
+import 'theme/app_theme.dart';
+import 'widgets/app_ui.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,20 +27,12 @@ class ConstropediaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Constropedia',
-
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.orange,
-        ),
-        useMaterial3: true,
-      ),
-
+      theme: AppTheme.light(),
       routes: {
         '/signup': (context) => const SignupPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),
       },
-
       home: const AuthGate(),
     );
   }
@@ -56,21 +50,16 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Firebase is checking the current authentication state.
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: AppLoadingState(message: 'Preparing Constropedia...'),
           );
         }
 
-        // User is logged in.
         if (snapshot.hasData) {
           return const HomeScreen();
         }
 
-        // User is not logged in.
         return const LoginPage();
       },
     );
