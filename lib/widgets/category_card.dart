@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../screens/category_page.dart';
+import '../theme/app_theme.dart';
+import 'app_ui.dart';
 
 class CategoryCard extends StatelessWidget {
   final String title;
@@ -15,15 +17,8 @@ class CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         onTap: () {
           Navigator.push(
             context,
@@ -34,38 +29,28 @@ class CategoryCard extends StatelessWidget {
             ),
           );
         },
-
         child: Padding(
-          padding: const EdgeInsets.all(14),
-
+          padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-
-                child: Icon(
-                  icon,
-                  size: 32,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
+              IconBadge(icon: icon),
+              const Spacer(),
               Text(
                 title,
-                textAlign: TextAlign.center,
-
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                descriptionForCategory(title),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
               ),
             ],
           ),

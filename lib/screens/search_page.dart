@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/article.dart';
 import '../services/firestore_service.dart';
+import '../widgets/app_ui.dart';
 import 'article_page.dart';
 
 class SearchPage extends StatefulWidget {
@@ -12,385 +13,173 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final TextEditingController searchController =
-      TextEditingController();
+  final FirestoreService _firestoreService = FirestoreService();
+  final TextEditingController _searchController = TextEditingController();
 
-  final FirestoreService firestoreService = FirestoreService();
-
-  String searchText = '';
+  List<Article> _articles = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  String _searchQuery = '';
 
   @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
+  void initState() {
+    super.initState();
+    _loadArticles();
 
-  void performSearch(String value) {
-    setState(() {
-      searchText = value.trim().toLowerCase();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim().toLowerCase();
+      });
     });
   }
 
-  List<Article> filterArticles(List<Article> articles) {
-    if (searchText.isEmpty) {
-      return articles;
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadArticles() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final articles = await _firestoreService.getArticles();
+
+      if (!mounted) return;
+
+      setState(() {
+        _articles = articles;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+
+      debugPrint('Search article loading error: $e');
+    }
+  }
+
+  List<Article> get _filteredArticles {
+    if (_searchQuery.isEmpty) {
+      return _articles;
     }
 
-    final results = articles.where((article) {
+    return _articles.where((article) {
       final title = article.title.toLowerCase();
       final description = article.description.toLowerCase();
       final content = article.content.toLowerCase();
       final category = article.category.toLowerCase();
 
-      return title.contains(searchText) ||
-          description.contains(searchText) ||
-          content.contains(searchText) ||
-          category.contains(searchText);
+      return title.contains(_searchQuery) ||
+          description.contains(_searchQuery) ||
+          content.contains(_searchQuery) ||
+          category.contains(_searchQuery);
     }).toList();
-
-    // Exact title matches first.
-    results.sort((a, b) {
-      final aTitle = a.title.toLowerCase();
-      final bTitle = b.title.toLowerCase();
-
-      final aExact = aTitle == searchText;
-      final bExact = bTitle == searchText;
-
-      if (aExact && !bExact) {
-        return -1;
-      }
-
-      if (!aExact && bExact) {
-        return 1;
-      }
-
-      final aStarts = aTitle.startsWith(searchText);
-      final bStarts = bTitle.startsWith(searchText);
-
-      if (aStarts && !bStarts) {
-        return -1;
-      }
-
-      if (!aStarts && bStarts) {
-        return 1;
-      }
-
-      return aTitle.compareTo(bTitle);
-    });
-
-    return results;
   }
 
   @override
   Widget build(BuildContext context) {
+    final results = _filteredArticles;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Search Articles',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Search'),
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              10,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: TextField(
-              controller: searchController,
-              onChanged: performSearch,
+              controller: _searchController,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Search construction terms...',
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                ),
-                suffixIcon: searchController.text.isNotEmpty
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        tooltip: 'Clear search',
+                        tooltip: 'Clear',
+                        icon: const Icon(Icons.clear_rounded),
                         onPressed: () {
-                          searchController.clear();
-
-                          setState(() {
-                            searchText = '';
-                          });
+                          _searchController.clear();
                         },
-                        icon: const Icon(
-                          Icons.clear_rounded,
-                        ),
                       )
                     : null,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Colors.orange.shade700,
-                    width: 1.5,
-                  ),
-                ),
               ),
             ),
           ),
-
-          Expanded(
-            child: StreamBuilder<List<Article>>(
-              stream: firestoreService.getArticles(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return _buildErrorState(
-                    snapshot.error.toString(),
-                  );
-                }
-
-                final articles = snapshot.data ?? [];
-                final searchResults = filterArticles(articles);
-
-                if (searchResults.isEmpty) {
-                  return _buildEmptyState();
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    6,
-                    16,
-                    16,
-                  ),
-                  itemCount: searchResults.length,
-                  itemBuilder: (context, index) {
-                    final article = searchResults[index];
-
-                    return _buildArticleCard(
-                      context,
-                      article,
-                    );
-                  },
-                );
-              },
+          if (!_isLoading && _errorMessage == null && results.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _searchQuery.isEmpty
+                      ? '${results.length} terms'
+                      : '${results.length} results',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
             ),
+          Expanded(
+            child: _buildBody(results),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildArticleCard(
-    BuildContext context,
-    Article article,
-  ) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ArticlePage(
-                article: article,
+  Widget _buildBody(List<Article> results) {
+    if (_isLoading) {
+      return const AppLoadingState(message: 'Searching the library...');
+    }
+
+    if (_errorMessage != null) {
+      return AppErrorState(
+        title: 'Unable to load articles',
+        details: _errorMessage ?? 'Unknown error',
+        onRetry: _loadArticles,
+      );
+    }
+
+    if (results.isEmpty) {
+      final hasSearchText = _searchQuery.isNotEmpty;
+      return AppEmptyState(
+        icon: hasSearchText
+            ? Icons.search_off_rounded
+            : Icons.menu_book_outlined,
+        title: hasSearchText ? 'No articles found' : 'No articles available',
+        message: hasSearchText
+            ? 'Try another construction term or category name.'
+            : 'There are no articles available right now.',
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+      itemCount: results.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final article = results[index];
+        return ArticleListCard(
+          article: article,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ArticlePage(article: article),
               ),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.menu_book_rounded,
-                  size: 28,
-                ),
-              ),
-
-              const SizedBox(width: 14),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      article.title,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Text(
-                      article.description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.category_outlined,
-                          size: 15,
-                          color: Colors.orange.shade800,
-                        ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            article.category,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.orange.shade800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              searchText.isEmpty
-                  ? Icons.menu_book_outlined
-                  : Icons.search_off_rounded,
-              size: 65,
-              color: Colors.orange.shade300,
-            ),
-
-            const SizedBox(height: 16),
-
-            Text(
-              searchText.isEmpty
-                  ? 'No articles available'
-                  : 'No articles found',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              searchText.isEmpty
-                  ? 'There are no articles available yet.'
-                  : 'Try a different construction term.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              size: 55,
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              'Unable to load articles',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {});
-              },
-              icon: const Icon(
-                Icons.refresh_rounded,
-              ),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

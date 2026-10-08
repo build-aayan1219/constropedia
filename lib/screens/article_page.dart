@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/article.dart';
 import '../models/mixture_record.dart';
 import '../services/firestore_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_ui.dart';
 import 'cement_mixture_data_page.dart';
 import 'component_detail_page.dart';
 
@@ -65,15 +67,11 @@ class _ArticlePageState extends State<ArticlePage> {
       debugPrint('Error loading mixture sample: $e');
       if (!mounted) return;
       setState(() {
-        _mixtureError = 'Unable to load mixture data. Please try again.';
+        _mixtureError = 'Unable to load mixture data. Please try again.\n$e';
         _isLoadingMixture = false;
       });
     }
   }
-
-  // --------------------------------------------------
-  // CHECK BOOKMARK
-  // --------------------------------------------------
 
   Future<void> checkBookmark() async {
     try {
@@ -98,10 +96,6 @@ class _ArticlePageState extends State<ArticlePage> {
       debugPrint('Error checking bookmark: $e');
     }
   }
-
-  // --------------------------------------------------
-  // TOGGLE BOOKMARK
-  // --------------------------------------------------
 
   Future<void> toggleBookmark() async {
     if (isLoading) return;
@@ -160,9 +154,9 @@ class _ArticlePageState extends State<ArticlePage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Something went wrong. Please try again.',
+            'Something went wrong. Please try again.\n$e',
           ),
         ),
       );
@@ -171,35 +165,22 @@ class _ArticlePageState extends State<ArticlePage> {
     }
   }
 
-  // --------------------------------------------------
-  // KEY POINT CARD
-  // --------------------------------------------------
-
   Widget _buildPoint(String text) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.check_rounded,
-              size: 16,
-              color: Colors.orange.shade800,
-            ),
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 18,
+            color: AppColors.orange,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -208,6 +189,7 @@ class _ArticlePageState extends State<ArticlePage> {
               style: const TextStyle(
                 fontSize: 14,
                 height: 1.5,
+                color: AppColors.charcoal,
               ),
             ),
           ),
@@ -216,36 +198,30 @@ class _ArticlePageState extends State<ArticlePage> {
     );
   }
 
-  // --------------------------------------------------
-  // ARTICLE IMAGE
-  // --------------------------------------------------
-
   Widget _buildArticleImage() {
     final imageUrl = widget.article.imageUrl;
 
-    // No image URL
-    if (imageUrl == null || imageUrl.trim().isEmpty) {
+    Widget placeholder({
+      required IconData icon,
+      required String label,
+    }) {
       return Container(
         width: double.infinity,
         height: 200,
         decoration: BoxDecoration(
-          color: Colors.orange.shade50,
-          borderRadius: BorderRadius.circular(18),
+          color: AppColors.orangeSoft,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.image_outlined,
-              size: 55,
-              color: Colors.orange.shade300,
-            ),
+            Icon(icon, size: 42, color: AppColors.orangeDark),
             const SizedBox(height: 10),
             Text(
-              'No image available',
-              style: TextStyle(
+              label,
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: AppColors.muted,
               ),
             ),
           ],
@@ -253,9 +229,15 @@ class _ArticlePageState extends State<ArticlePage> {
       );
     }
 
-    // Image URL exists
+    if (imageUrl == null || imageUrl.trim().isEmpty) {
+      return placeholder(
+        icon: Icons.apartment_outlined,
+        label: 'No image available',
+      );
+    }
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Image.network(
         imageUrl,
         width: double.infinity,
@@ -273,7 +255,7 @@ class _ArticlePageState extends State<ArticlePage> {
           return Container(
             width: double.infinity,
             height: 220,
-            color: Colors.orange.shade50,
+            color: AppColors.orangeSoft,
             child: const Center(
               child: CircularProgressIndicator(),
             ),
@@ -284,37 +266,14 @@ class _ArticlePageState extends State<ArticlePage> {
           Object error,
           StackTrace? stackTrace,
         ) {
-          return Container(
-            width: double.infinity,
-            height: 220,
-            color: Colors.orange.shade50,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.broken_image_outlined,
-                  size: 55,
-                  color: Colors.orange.shade300,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Unable to load image',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
+          return placeholder(
+            icon: Icons.broken_image_outlined,
+            label: 'Unable to load image',
           );
         },
       ),
     );
   }
-
-  // --------------------------------------------------
-  // BUILD
-  // --------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -322,204 +281,81 @@ class _ArticlePageState extends State<ArticlePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Article',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Article'),
         actions: [
           IconButton(
-            tooltip: isBookmarked
-                ? 'Remove Bookmark'
-                : 'Add Bookmark',
+            tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
             onPressed: isLoading ? null : toggleBookmark,
             icon: Icon(
               isBookmarked
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
+              color: isBookmarked ? AppColors.orange : null,
             ),
           ),
         ],
       ),
-
-      // --------------------------------------------------
-      // ARTICLE BODY
-      // --------------------------------------------------
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // IMAGE
             _buildArticleImage(),
-
             const SizedBox(height: 18),
-
-            // ARTICLE HEADER
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.menu_book_rounded,
-                      size: 30,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Text(
-                    article.title,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    article.category,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange.shade800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // --------------------------------------------------
-            // DEFINITION
-            // --------------------------------------------------
-
-            const Text(
-              'Definition',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
+            CategoryChip(label: article.category),
             const SizedBox(height: 10),
-
+            Text(
+              article.title,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 20),
+            const AppSectionHeader(title: 'Definition'),
+            const SizedBox(height: 10),
             Card(
-              elevation: 1,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   article.description,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.6,
-                  ),
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // --------------------------------------------------
-            // CONTENT
-            // --------------------------------------------------
-
-            const Text(
-              'Content',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
+            const AppSectionHeader(title: 'Content'),
             const SizedBox(height: 10),
-
             Card(
-              elevation: 1,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   article.content.isNotEmpty
                       ? article.content
                       : 'No content available for this article.',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.7,
-                  ),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        height: 1.7,
+                      ),
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // --------------------------------------------------
-            // KEY POINTS
-            // --------------------------------------------------
-
-            const Text(
-              'Key Points',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
+            const AppSectionHeader(title: 'Key points'),
             const SizedBox(height: 12),
-
             _buildPoint(
               'Important construction material used in various applications.',
             ),
-
             _buildPoint(
               'Its properties and usage depend on the specific construction requirement.',
             ),
-
             _buildPoint(
               'Proper selection and application can improve construction quality and durability.',
             ),
-
-            const SizedBox(height: 14),
-
-            // --------------------------------------------------
-            // CONCRETE MIXTURE DATA SECTION (FOR CEMENT)
-            // --------------------------------------------------
+            const SizedBox(height: 10),
             if (_isCementArticle) ...[
               _buildConcreteMixtureSection(),
               const SizedBox(height: 24),
             ],
-
-            // --------------------------------------------------
-            // BOOKMARK BUTTON
-            // --------------------------------------------------
-
             SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 50,
               child: ElevatedButton.icon(
                 onPressed: isLoading ? null : toggleBookmark,
                 icon: Icon(
@@ -528,75 +364,41 @@ class _ArticlePageState extends State<ArticlePage> {
                       : Icons.bookmark_border_rounded,
                 ),
                 label: Text(
-                  isBookmarked
-                      ? 'Remove Bookmark'
-                      : 'Bookmark Article',
-                ),
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                  isBookmarked ? 'Remove bookmark' : 'Bookmark article',
                 ),
               ),
             ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  // --------------------------------------------------
-  // CONCRETE MIXTURE SECTION
-  // --------------------------------------------------
-
   Widget _buildConcreteMixtureSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Concrete Mixture Components',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Standard component proportions and performance metrics from laboratory concrete mixes.',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-          ),
+        const AppSectionHeader(
+          title: 'Concrete mixture components',
+          subtitle:
+              'Standard component proportions and performance metrics from laboratory concrete mixes.',
         ),
         const SizedBox(height: 14),
-
         if (_isLoadingMixture)
-          Card(
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Padding(
+          const Card(
+            child: Padding(
               padding: EdgeInsets.all(24),
-              child: Center(
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
-                    Text('Loading mixture components...'),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 12),
+                  Text('Loading mixture components...'),
+                ],
               ),
             ),
           )
         else if (_mixtureError != null)
           Card(
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
             child: Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
@@ -604,7 +406,7 @@ class _ArticlePageState extends State<ArticlePage> {
                   Text(
                     _mixtureError!,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade700),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 10),
                   ElevatedButton(
@@ -617,24 +419,18 @@ class _ArticlePageState extends State<ArticlePage> {
           )
         else if (_sampleMixtureRecord == null)
           Card(
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
             child: Padding(
               padding: const EdgeInsets.all(18),
-              child: Center(
-                child: Column(
-                  children: [
-                    const Text('No mixture data available.'),
-                    const SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      onPressed: _loadSampleMixture,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Reload'),
-                    ),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  const Text('No mixture data available.'),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    onPressed: _loadSampleMixture,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Reload'),
+                  ),
+                ],
               ),
             ),
           )
@@ -647,7 +443,7 @@ class _ArticlePageState extends State<ArticlePage> {
               crossAxisCount: 2,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: 1.55,
+              childAspectRatio: 1.45,
             ),
             itemBuilder: (context, idx) {
               final comp = _sampleMixtureRecord!.components[idx];
@@ -657,7 +453,6 @@ class _ArticlePageState extends State<ArticlePage> {
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
-            height: 50,
             child: OutlinedButton.icon(
               onPressed: () {
                 Navigator.push(
@@ -668,23 +463,7 @@ class _ArticlePageState extends State<ArticlePage> {
                 );
               },
               icon: const Icon(Icons.table_chart_outlined),
-              label: const Text(
-                'View Mixture Data',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.orange.shade900,
-                side: BorderSide(
-                  color: Colors.orange.shade700,
-                  width: 1.5,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
+              label: const Text('View mixture data'),
             ),
           ),
         ],
@@ -694,13 +473,8 @@ class _ArticlePageState extends State<ArticlePage> {
 
   Widget _buildComponentCard(MixtureComponentItem comp) {
     return Card(
-      elevation: 1.5,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         onTap: () {
           Navigator.push(
             context,
@@ -710,38 +484,41 @@ class _ArticlePageState extends State<ArticlePage> {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 comp.name,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    comp.value,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
+                  Flexible(
+                    child: Text(
+                      comp.value,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.orangeDark,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     comp.unit,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade600,
+                      color: AppColors.muted,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
