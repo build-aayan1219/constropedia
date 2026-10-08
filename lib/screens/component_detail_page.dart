@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/mixture_record.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_ui.dart';
 
 class ComponentDetailPage extends StatelessWidget {
   final MixtureComponentItem component;
@@ -38,109 +40,61 @@ class ComponentDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          component.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(component.name),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER HERO CARD
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.orange.shade200,
-                  width: 1,
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconBadge(icon: _getComponentIcon(component.fieldName)),
+                    const SizedBox(height: 16),
+                    Text(
+                      component.name,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Concrete mixture component',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      _getComponentIcon(component.fieldName),
-                      size: 36,
-                      color: Colors.orange.shade900,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    component.name,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Concrete Mixture Component',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange.shade800,
-                    ),
-                  ),
-                ],
-              ),
             ),
-
             const SizedBox(height: 22),
-
-            // COMPONENT VALUE & UNIT CARD
-            const Text(
-              'Sample Mixture Value',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const AppSectionHeader(title: 'Sample mixture value'),
             const SizedBox(height: 10),
-
             Card(
-              elevation: 1,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Measured Quantity',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Measured quantity',
+                            style: Theme.of(context).textTheme.labelSmall,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          component.value,
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade900,
+                          const SizedBox(height: 4),
+                          Text(
+                            component.value,
+                            style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.orangeDark,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -148,15 +102,15 @@ class ComponentDetailPage extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
+                        color: AppColors.orangeSoft,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         component.unit,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade900,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.orangeDark,
                         ),
                       ),
                     ),
@@ -164,66 +118,36 @@ class ComponentDetailPage extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // FUNCTION & ROLE IN CONCRETE
-            const Text(
-              'Role in Concrete Mixture',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const AppSectionHeader(title: 'Role in concrete mixture'),
             const SizedBox(height: 10),
-
             Card(
-              elevation: 1,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(18),
                 child: Text(
                   component.description,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.6,
-                  ),
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // TECHNICAL SPECIFICATIONS
-            const Text(
-              'Standard Specifications',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const AppSectionHeader(title: 'Standard specifications'),
             const SizedBox(height: 10),
-
             _buildSpecTile(
-              label: 'Standard Measurement Unit',
+              label: 'Standard measurement unit',
               value: component.unit,
               icon: Icons.straighten_rounded,
             ),
             _buildSpecTile(
-              label: 'Database Field Key',
+              label: 'Database field key',
               value: component.fieldName,
               icon: Icons.storage_rounded,
             ),
             _buildSpecTile(
-              label: 'Associated Material',
+              label: 'Associated material',
               value: 'Cement & Concrete Mixtures',
               icon: Icons.engineering_rounded,
             ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -239,13 +163,13 @@ class ComponentDetailPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 22, color: Colors.orange.shade800),
+          Icon(icon, size: 22, color: AppColors.orangeDark),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -253,9 +177,9 @@ class ComponentDetailPage extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: AppColors.muted,
                   ),
                 ),
                 const SizedBox(height: 2),
