@@ -8,10 +8,7 @@ import 'component_detail_page.dart';
 class ArticlePage extends StatefulWidget {
   final Article article;
 
-  const ArticlePage({
-    super.key,
-    required this.article,
-  });
+  const ArticlePage({super.key, required this.article});
 
   @override
   State<ArticlePage> createState() => _ArticlePageState();
@@ -124,11 +121,9 @@ class _ArticlePageState extends State<ArticlePage> {
           isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Removed from bookmarks'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Removed from bookmarks')));
       } else {
         await _firestoreService.addBookmark(
           articleId: widget.article.id,
@@ -146,11 +141,9 @@ class _ArticlePageState extends State<ArticlePage> {
           isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Added to bookmarks'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Added to bookmarks')));
       }
     } catch (e) {
       if (!mounted) return;
@@ -161,9 +154,7 @@ class _ArticlePageState extends State<ArticlePage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Something went wrong. Please try again.',
-          ),
+          content: Text('Something went wrong. Please try again.'),
         ),
       );
 
@@ -182,9 +173,7 @@ class _ArticlePageState extends State<ArticlePage> {
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,10 +194,7 @@ class _ArticlePageState extends State<ArticlePage> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.5,
-              ),
+              style: const TextStyle(fontSize: 14, height: 1.5),
             ),
           ),
         ],
@@ -235,18 +221,11 @@ class _ArticlePageState extends State<ArticlePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.image_outlined,
-              size: 55,
-              color: Colors.orange.shade300,
-            ),
+            Icon(Icons.image_outlined, size: 55, color: Colors.orange.shade300),
             const SizedBox(height: 10),
             Text(
               'No image available',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -261,53 +240,49 @@ class _ArticlePageState extends State<ArticlePage> {
         width: double.infinity,
         height: 220,
         fit: BoxFit.cover,
-        loadingBuilder: (
-          BuildContext context,
-          Widget child,
-          ImageChunkEvent? loadingProgress,
-        ) {
-          if (loadingProgress == null) {
-            return child;
-          }
+        loadingBuilder:
+            (
+              BuildContext context,
+              Widget child,
+              ImageChunkEvent? loadingProgress,
+            ) {
+              if (loadingProgress == null) {
+                return child;
+              }
 
-          return Container(
-            width: double.infinity,
-            height: 220,
-            color: Colors.orange.shade50,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        },
-        errorBuilder: (
-          BuildContext context,
-          Object error,
-          StackTrace? stackTrace,
-        ) {
-          return Container(
-            width: double.infinity,
-            height: 220,
-            color: Colors.orange.shade50,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.broken_image_outlined,
-                  size: 55,
-                  color: Colors.orange.shade300,
+              return Container(
+                width: double.infinity,
+                height: 220,
+                color: Colors.orange.shade50,
+                child: const Center(child: CircularProgressIndicator()),
+              );
+            },
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) {
+              return Container(
+                width: double.infinity,
+                height: 220,
+                color: Colors.orange.shade50,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.broken_image_outlined,
+                      size: 55,
+                      color: Colors.orange.shade300,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Unable to load image',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'Unable to load image',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            },
       ),
     );
   }
@@ -324,15 +299,11 @@ class _ArticlePageState extends State<ArticlePage> {
       appBar: AppBar(
         title: const Text(
           'Article',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            tooltip: isBookmarked
-                ? 'Remove Bookmark'
-                : 'Add Bookmark',
+            tooltip: isBookmarked ? 'Remove Bookmark' : 'Add Bookmark',
             onPressed: isLoading ? null : toggleBookmark,
             icon: Icon(
               isBookmarked
@@ -346,13 +317,11 @@ class _ArticlePageState extends State<ArticlePage> {
       // --------------------------------------------------
       // ARTICLE BODY
       // --------------------------------------------------
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // IMAGE
             _buildArticleImage(),
 
@@ -375,10 +344,7 @@ class _ArticlePageState extends State<ArticlePage> {
                       color: Colors.orange.shade100,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(
-                      Icons.menu_book_rounded,
-                      size: 30,
-                    ),
+                    child: const Icon(Icons.menu_book_rounded, size: 30),
                   ),
 
                   const SizedBox(height: 16),
@@ -410,13 +376,9 @@ class _ArticlePageState extends State<ArticlePage> {
             // --------------------------------------------------
             // DEFINITION
             // --------------------------------------------------
-
             const Text(
               'Definition',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 10),
@@ -431,10 +393,7 @@ class _ArticlePageState extends State<ArticlePage> {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   article.description,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.6,
-                  ),
+                  style: const TextStyle(fontSize: 15, height: 1.6),
                 ),
               ),
             ),
@@ -444,13 +403,9 @@ class _ArticlePageState extends State<ArticlePage> {
             // --------------------------------------------------
             // CONTENT
             // --------------------------------------------------
-
             const Text(
               'Content',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 10),
@@ -467,10 +422,7 @@ class _ArticlePageState extends State<ArticlePage> {
                   article.content.isNotEmpty
                       ? article.content
                       : 'No content available for this article.',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.7,
-                  ),
+                  style: const TextStyle(fontSize: 15, height: 1.7),
                 ),
               ),
             ),
@@ -480,13 +432,9 @@ class _ArticlePageState extends State<ArticlePage> {
             // --------------------------------------------------
             // KEY POINTS
             // --------------------------------------------------
-
             const Text(
               'Key Points',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -516,7 +464,6 @@ class _ArticlePageState extends State<ArticlePage> {
             // --------------------------------------------------
             // BOOKMARK BUTTON
             // --------------------------------------------------
-
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -528,9 +475,7 @@ class _ArticlePageState extends State<ArticlePage> {
                       : Icons.bookmark_border_rounded,
                 ),
                 label: Text(
-                  isBookmarked
-                      ? 'Remove Bookmark'
-                      : 'Bookmark Article',
+                  isBookmarked ? 'Remove Bookmark' : 'Bookmark Article',
                 ),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
@@ -557,18 +502,12 @@ class _ArticlePageState extends State<ArticlePage> {
       children: [
         const Text(
           'Concrete Mixture Components',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
         Text(
           'Standard component proportions and performance metrics from laboratory concrete mixes.',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
         ),
         const SizedBox(height: 14),
 
@@ -670,17 +609,11 @@ class _ArticlePageState extends State<ArticlePage> {
               icon: const Icon(Icons.table_chart_outlined),
               label: const Text(
                 'View Mixture Data',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.orange.shade900,
-                side: BorderSide(
-                  color: Colors.orange.shade700,
-                  width: 1.5,
-                ),
+                side: BorderSide(color: Colors.orange.shade700, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -696,9 +629,7 @@ class _ArticlePageState extends State<ArticlePage> {
     return Card(
       elevation: 1.5,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () {

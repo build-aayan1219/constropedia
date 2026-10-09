@@ -24,11 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/login',
-      (route) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
@@ -37,10 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text(
           'Constropedia',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
         centerTitle: false,
         actions: [
@@ -48,9 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const BookmarksPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const BookmarksPage()),
               );
             },
             icon: const Icon(Icons.bookmark_outline),
@@ -75,20 +66,14 @@ class _HomeScreenState extends State<HomeScreen> {
             // WELCOME
             const Text(
               'Welcome to Constropedia 👋',
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 6),
 
             Text(
               'Learn construction concepts, materials and practices.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
             ),
 
             const SizedBox(height: 20),
@@ -100,9 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const SearchPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const SearchPage()),
                 );
               },
 
@@ -118,9 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderSide: BorderSide.none,
                 ),
 
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
 
@@ -129,10 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // TERM OF THE DAY
             const Text(
               'Term of the Day',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -157,18 +135,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
 
-                      child: const Icon(
-                        Icons.foundation,
-                        size: 36,
-                      ),
+                      child: const Icon(Icons.foundation, size: 36),
                     ),
 
                     const SizedBox(width: 15),
 
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
                           const Text(
@@ -203,10 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // CATEGORIES
             const Text(
               'Categories',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -223,20 +194,11 @@ class _HomeScreenState extends State<HomeScreen> {
               childAspectRatio: 1.15,
 
               children: const [
-                CategoryCard(
-                  title: 'Materials',
-                  icon: Icons.construction,
-                ),
+                CategoryCard(title: 'Materials', icon: Icons.construction),
 
-                CategoryCard(
-                  title: 'Structural',
-                  icon: Icons.account_tree,
-                ),
+                CategoryCard(title: 'Structural', icon: Icons.account_tree),
 
-                CategoryCard(
-                  title: 'Finishing',
-                  icon: Icons.format_paint,
-                ),
+                CategoryCard(title: 'Finishing', icon: Icons.format_paint),
 
                 CategoryCard(
                   title: 'Site Safety',
@@ -255,10 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // QUIZ
             const Text(
               'Test Your Knowledge 🧠',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -285,40 +244,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
 
-                  child: const Icon(
-                    Icons.quiz,
-                  ),
+                  child: const Icon(Icons.quiz),
                 ),
 
                 title: const Text(
                   'Take a Construction Quiz',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
 
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     'Test yourself with category-wise questions.',
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade700),
                   ),
                 ),
 
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
-                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 18),
 
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const QuizPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const QuizPage()),
                   );
                 },
               ),

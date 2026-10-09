@@ -7,10 +7,7 @@ import 'article_page.dart';
 class CategoryPage extends StatelessWidget {
   final String categoryName;
 
-  const CategoryPage({
-    super.key,
-    required this.categoryName,
-  });
+  const CategoryPage({super.key, required this.categoryName});
 
   @override
   Widget build(BuildContext context) {
@@ -20,21 +17,15 @@ class CategoryPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           categoryName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: StreamBuilder<List<Article>>(
-        stream: firestoreService.getArticlesByCategory(
-          categoryName,
-        ),
+        stream: firestoreService.getArticlesByCategory(categoryName),
         builder: (context, snapshot) {
           // Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           // Error
@@ -45,10 +36,7 @@ class CategoryPage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 55,
-                    ),
+                    const Icon(Icons.error_outline_rounded, size: 55),
                     const SizedBox(height: 16),
                     const Text(
                       'Unable to load articles',
@@ -61,9 +49,7 @@ class CategoryPage extends StatelessWidget {
                     Text(
                       'Please check your internet connection and try again.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
+                      style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ],
                 ),
@@ -127,9 +113,7 @@ class CategoryPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ArticlePage(
-                          article: article,
-                        ),
+                        builder: (_) => ArticlePage(article: article),
                       ),
                     );
                   },
@@ -144,18 +128,14 @@ class CategoryPage extends StatelessWidget {
                             color: Colors.orange.shade100,
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Icon(
-                            Icons.menu_book_rounded,
-                            size: 28,
-                          ),
+                          child: const Icon(Icons.menu_book_rounded, size: 28),
                         ),
 
                         const SizedBox(width: 14),
 
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 article.title,
@@ -204,10 +184,7 @@ class CategoryPage extends StatelessWidget {
 
                         const SizedBox(width: 8),
 
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 16,
-                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                       ],
                     ),
                   ),

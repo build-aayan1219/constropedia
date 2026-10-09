@@ -7,10 +7,7 @@ import '../services/firestore_service.dart';
 class CementMixtureDataPage extends StatefulWidget {
   final String articleId;
 
-  const CementMixtureDataPage({
-    super.key,
-    this.articleId = 'cement',
-  });
+  const CementMixtureDataPage({super.key, this.articleId = 'cement'});
 
   @override
   State<CementMixtureDataPage> createState() => _CementMixtureDataPageState();
@@ -119,7 +116,9 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not load more records. Please check your connection.'),
+          content: Text(
+            'Could not load more records. Please check your connection.',
+          ),
         ),
       );
     }
@@ -127,7 +126,9 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
 
   void _applySortToList(List<ConcreteMixtureRecord> list) {
     if (_sortBy == 'strength_desc') {
-      list.sort((a, b) => b.compressiveStrength.compareTo(a.compressiveStrength));
+      list.sort(
+        (a, b) => b.compressiveStrength.compareTo(a.compressiveStrength),
+      );
     } else if (_sortBy == 'age_desc') {
       list.sort((a, b) => b.age.compareTo(a.age));
     }
@@ -158,9 +159,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
       appBar: AppBar(
         title: const Text(
           'Cement Mixture Data',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           PopupMenuButton<String>(
@@ -168,10 +167,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
             icon: const Icon(Icons.sort_rounded),
             onSelected: _onSortChanged,
             itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'default',
-                child: Text('Default Order'),
-              ),
+              PopupMenuItem(value: 'default', child: Text('Default Order')),
               PopupMenuItem(
                 value: 'strength_desc',
                 child: Text('Highest Strength'),
@@ -191,9 +187,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -244,19 +238,13 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
               const SizedBox(height: 16),
               const Text(
                 'No mixture data available.',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 'There are no mixture component records loaded yet.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -303,10 +291,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
           child: Center(
             child: Text(
               'Showing all ${_records.length} records loaded',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             ),
           ),
         );
@@ -318,9 +303,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -339,17 +322,17 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
           ),
           title: Text(
             _formatRecordTitle(record.id),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(6),

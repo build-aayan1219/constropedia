@@ -4,17 +4,14 @@ import '../models/quiz_question.dart';
 import '../services/firestore_service.dart';
 
 class QuizPage extends StatefulWidget {
-  const QuizPage({
-    super.key,
-  });
+  const QuizPage({super.key});
 
   @override
   State<QuizPage> createState() => _QuizPageState();
 }
 
 class _QuizPageState extends State<QuizPage> {
-  final FirestoreService _firestoreService =
-      FirestoreService();
+  final FirestoreService _firestoreService = FirestoreService();
 
   final List<String> categories = const [
     'Materials',
@@ -39,9 +36,7 @@ class _QuizPageState extends State<QuizPage> {
   // START QUIZ
   // ==================================================
 
-  Future<void> startQuiz(
-    String category,
-  ) async {
+  Future<void> startQuiz(String category) async {
     setState(() {
       selectedCategory = category;
       isLoading = true;
@@ -52,9 +47,9 @@ class _QuizPageState extends State<QuizPage> {
     });
 
     try {
-      final loadedQuestions =
-          await _firestoreService
-              .fetchQuizQuestions(category);
+      final loadedQuestions = await _firestoreService.fetchQuizQuestions(
+        category,
+      );
 
       if (!mounted) return;
 
@@ -63,8 +58,7 @@ class _QuizPageState extends State<QuizPage> {
           isLoading = false;
         });
 
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               '$category has only '
@@ -72,8 +66,7 @@ class _QuizPageState extends State<QuizPage> {
               'questions available. '
               '10 questions are required.',
             ),
-            duration:
-                const Duration(seconds: 5),
+            duration: const Duration(seconds: 5),
           ),
         );
 
@@ -81,8 +74,7 @@ class _QuizPageState extends State<QuizPage> {
       }
 
       setState(() {
-        questions =
-            loadedQuestions.take(10).toList();
+        questions = loadedQuestions.take(10).toList();
         isLoading = false;
       });
     } catch (e) {
@@ -92,20 +84,14 @@ class _QuizPageState extends State<QuizPage> {
         isLoading = false;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Unable to load quiz questions.\n$e',
-          ),
-          duration:
-              const Duration(seconds: 6),
+          content: Text('Unable to load quiz questions.\n$e'),
+          duration: const Duration(seconds: 6),
         ),
       );
 
-      debugPrint(
-        'Quiz loading error: $e',
-      );
+      debugPrint('Quiz loading error: $e');
     }
   }
 
@@ -113,9 +99,7 @@ class _QuizPageState extends State<QuizPage> {
   // SELECT / CHANGE ANSWER
   // ==================================================
 
-  void selectAnswer(
-    int answerIndex,
-  ) {
+  void selectAnswer(int answerIndex) {
     setState(() {
       selectedAnswer = answerIndex;
     });
@@ -127,31 +111,48 @@ class _QuizPageState extends State<QuizPage> {
 
   Future<void> nextQuestion() async {
     if (selectedAnswer == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please select an answer.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select an answer.')));
 
       return;
     }
 
-    final question =
-        questions[currentQuestion];
+    final question = questions[currentQuestion];
 
-    final selectedOption =
-        question.options[selectedAnswer!];
+    final selectedOption = question.options[selectedAnswer!];
 
-    if (selectedOption ==
-        question.correctAnswer) {
+    if (selectedOption == question.correctAnswer) {
       score++;
     }
 
-    if (currentQuestion <
-        questions.length - 1) {
+    if (currentQuestion < questions.length - 1) {
+      final explanation =
+          question.optionExplanations[selectedOption] ??
+          'No explanation available.';
+
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(
+              selectedOption == question.correctAnswer
+                  ? 'Correct! '
+                  : 'Incorrect',
+            ),
+            content: Text(explanation),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Next'),
+              ),
+            ],
+          );
+        },
+      );
+
       setState(() {
         currentQuestion++;
         selectedAnswer = null;
@@ -183,20 +184,16 @@ class _QuizPageState extends State<QuizPage> {
 
       savedSuccessfully = true;
     } catch (e) {
-      debugPrint(
-        'Error saving quiz result: $e',
-      );
+      debugPrint('Error saving quiz result: $e');
 
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Quiz completed, but the result '
               'could not be saved.\n$e',
             ),
-            duration:
-                const Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
           ),
         );
       }
@@ -208,48 +205,34 @@ class _QuizPageState extends State<QuizPage> {
       isSavingResult = false;
     });
 
-    showResult(
-      savedSuccessfully:
-          savedSuccessfully,
-    );
+    showResult(savedSuccessfully: savedSuccessfully);
   }
 
   // ==================================================
   // RESULT DIALOG
   // ==================================================
 
-  void showResult({
-    required bool savedSuccessfully,
-  }) {
-    final totalQuestions =
-        questions.length;
+  void showResult({required bool savedSuccessfully}) {
+    final totalQuestions = questions.length;
 
-    final percentage =
-        totalQuestions == 0
-            ? 0
-            : ((score /
-                        totalQuestions) *
-                    100)
-                .round();
+    final percentage = totalQuestions == 0
+        ? 0
+        : ((score / totalQuestions) * 100).round();
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Quiz Completed! 🎉',
-          ),
+          title: const Text('Quiz Completed! 🎉'),
           content: Column(
-            mainAxisSize:
-                MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '$score / $totalQuestions',
                 style: const TextStyle(
                   fontSize: 34,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
@@ -259,8 +242,7 @@ class _QuizPageState extends State<QuizPage> {
                 '$percentage%',
                 style: const TextStyle(
                   fontSize: 20,
-                  fontWeight:
-                      FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
@@ -270,29 +252,22 @@ class _QuizPageState extends State<QuizPage> {
                 savedSuccessfully
                     ? 'Your result has been saved to Quiz History.'
                     : 'Your result could not be saved. Please check Firebase permissions.',
-                textAlign:
-                    TextAlign.center,
+                textAlign: TextAlign.center,
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                );
+                Navigator.pop(dialogContext);
 
                 restartQuiz();
               },
-              child: const Text(
-                'Try Again',
-              ),
+              child: const Text('Try Again'),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                );
+                Navigator.pop(dialogContext);
 
                 setState(() {
                   selectedCategory = null;
@@ -302,9 +277,7 @@ class _QuizPageState extends State<QuizPage> {
                   selectedAnswer = null;
                 });
               },
-              child: const Text(
-                'Done',
-              ),
+              child: const Text('Done'),
             ),
           ],
         );
@@ -330,73 +303,46 @@ class _QuizPageState extends State<QuizPage> {
 
   Widget buildCategorySelection() {
     return ListView(
-      padding:
-          const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       children: [
         const SizedBox(height: 8),
 
         const Text(
           'Choose a Category',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight:
-                FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
 
         const SizedBox(height: 8),
 
         const Text(
           'Test your construction knowledge.',
-          style: TextStyle(
-            fontSize: 15,
-          ),
+          style: TextStyle(fontSize: 15),
         ),
 
         const SizedBox(height: 24),
 
-        ...categories.map(
-          (category) {
-            return Card(
-              margin:
-                  const EdgeInsets.only(
-                bottom: 12,
+        ...categories.map((category) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 8,
               ),
-              child: ListTile(
-                contentPadding:
-                    const EdgeInsets
-                        .symmetric(
-                  horizontal: 18,
-                  vertical: 8,
-                ),
-                leading:
-                    const CircleAvatar(
-                  child: Icon(
-                    Icons
-                        .construction_rounded,
-                  ),
-                ),
-                title: Text(
-                  category,
-                  style:
-                      const TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-                trailing:
-                    const Icon(
-                  Icons
-                      .arrow_forward_ios_rounded,
-                  size: 18,
-                ),
-                onTap: () {
-                  startQuiz(category);
-                },
+              leading: const CircleAvatar(
+                child: Icon(Icons.construction_rounded),
               ),
-            );
-          },
-        ),
+              title: Text(
+                category,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+              onTap: () {
+                startQuiz(category);
+              },
+            ),
+          );
+        }),
       ],
     );
   }
@@ -406,95 +352,55 @@ class _QuizPageState extends State<QuizPage> {
   // ==================================================
 
   Widget buildQuiz() {
-    final question =
-        questions[currentQuestion];
+    final question = questions[currentQuestion];
 
     return Padding(
-      padding:
-          const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Question ${currentQuestion + 1} of ${questions.length}',
-            style:
-                const TextStyle(
-              fontSize: 16,
-              fontWeight:
-                  FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 10),
 
           LinearProgressIndicator(
-            value:
-                (currentQuestion + 1) /
-                    questions.length,
+            value: (currentQuestion + 1) / questions.length,
           ),
 
           const SizedBox(height: 30),
 
           Text(
             question.question,
-            style:
-                const TextStyle(
-              fontSize: 22,
-              fontWeight:
-                  FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 25),
 
           Expanded(
-            child:
-                ListView.builder(
-              itemCount:
-                  question.options.length,
-              itemBuilder:
-                  (context, index) {
-                final isSelected =
-                    selectedAnswer ==
-                        index;
+            child: ListView.builder(
+              itemCount: question.options.length,
+              itemBuilder: (context, index) {
+                final isSelected = selectedAnswer == index;
 
                 return Card(
-                  margin:
-                      const EdgeInsets
-                          .only(
-                    bottom: 12,
-                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
-                    leading:
-                        CircleAvatar(
-                      child: Text(
-                        String.fromCharCode(
-                          65 + index,
-                        ),
-                      ),
+                    leading: CircleAvatar(
+                      child: Text(String.fromCharCode(65 + index)),
                     ),
                     title: Text(
-                      question
-                          .options[index],
-                      style:
-                          const TextStyle(
-                        fontSize: 16,
-                      ),
+                      question.options[index],
+                      style: const TextStyle(fontSize: 16),
                     ),
-                    trailing:
-                        isSelected
-                            ? const Icon(
-                                Icons
-                                    .check_circle,
-                              )
-                            : null,
-                    selected:
-                        isSelected,
+                    trailing: isSelected
+                        ? const Icon(Icons.check_circle)
+                        : null,
+                    selected: isSelected,
                     onTap: () {
-                      selectAnswer(
-                        index,
-                      );
+                      selectAnswer(index);
                     },
                   ),
                 );
@@ -505,32 +411,21 @@ class _QuizPageState extends State<QuizPage> {
           const SizedBox(height: 10),
 
           SizedBox(
-            width:
-                double.infinity,
+            width: double.infinity,
             height: 52,
-            child:
-                ElevatedButton(
-              onPressed:
-                  isSavingResult
-                      ? null
-                      : nextQuestion,
-              child:
-                  isSavingResult
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child:
-                              CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          currentQuestion ==
-                                  questions.length -
-                                      1
-                              ? 'Finish Quiz'
-                              : 'Next Question',
-                        ),
+            child: ElevatedButton(
+              onPressed: isSavingResult ? null : nextQuestion,
+              child: isSavingResult
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      currentQuestion == questions.length - 1
+                          ? 'Finish Quiz'
+                          : 'Next Question',
+                    ),
             ),
           ),
         ],
@@ -543,23 +438,14 @@ class _QuizPageState extends State<QuizPage> {
   // ==================================================
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Construction Quiz',
-        ),
-      ),
+      appBar: AppBar(title: const Text('Construction Quiz')),
       body: isLoading
-          ? const Center(
-              child:
-                  CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : questions.isEmpty
-              ? buildCategorySelection()
-              : buildQuiz(),
+          ? buildCategorySelection()
+          : buildQuiz(),
     );
   }
 }
