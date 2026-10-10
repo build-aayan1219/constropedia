@@ -3,11 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'firebase_options.dart';
+import 'theme/app_theme.dart';
+import 'widgets/loading_widget.dart';
 import 'screens/signup_page.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
-import 'theme/app_theme.dart';
-import 'widgets/app_ui.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,7 @@ class ConstropediaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Constropedia',
-      theme: AppTheme.light(),
+      theme: AppTheme.lightTheme,
       routes: {
         '/signup': (context) => const SignupPage(),
         '/login': (context) => const LoginPage(),
@@ -39,9 +39,7 @@ class ConstropediaApp extends StatelessWidget {
 }
 
 /// Decides which screen should be shown when the app starts.
-///
-/// FirebaseAuth automatically keeps track of the current
-/// authentication state.
+/// FirebaseAuth automatically keeps track of the current authentication state.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -50,16 +48,20 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        // Firebase is checking the current authentication state.
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: AppLoadingState(message: 'Preparing Constropedia...'),
+          return const LoadingWidget(
+            isFullScreen: true,
+            message: 'Starting Constropedia...',
           );
         }
 
+        // User is logged in.
         if (snapshot.hasData) {
           return const HomeScreen();
         }
 
+        // User is not logged in.
         return const LoginPage();
       },
     );

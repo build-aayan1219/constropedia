@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import '../models/mixture_record.dart';
 import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_ui.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
+import '../widgets/primary_button.dart';
 
 class CementMixtureDataPage extends StatefulWidget {
   final String articleId;
@@ -122,6 +125,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not load more records. Please check your connection.'),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -148,7 +152,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
     if (numStr.isNotEmpty) {
       final n = int.tryParse(numStr);
       if (n != null) {
-        return 'Mixture Record $n';
+        return 'Mixture Batch #$n';
       }
     }
     return docId;
@@ -157,29 +161,61 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cement mixture data'),
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(
+        title: 'Concrete Mix Dataset',
+        subtitle: 'Laboratory Mix Formulations & Compressive Testing',
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Sort Records',
-            icon: const Icon(Icons.sort_rounded),
+            icon: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Icon(
+                Icons.sort_rounded,
+                size: 18,
+                color: AppColors.textPrimary,
+              ),
+            ),
             onSelected: _onSortChanged,
             itemBuilder: (context) => const [
               PopupMenuItem(
                 value: 'default',
-                child: Text('Default Order'),
+                child: Row(
+                  children: [
+                    Icon(Icons.list_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Default Order'),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'strength_desc',
-                child: Text('Highest Strength'),
+                child: Row(
+                  children: [
+                    Icon(Icons.fitness_center_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Highest Strength (MPa)'),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'age_desc',
-                child: Text('Longest Curing Age'),
+                child: Row(
+                  children: [
+                    Icon(Icons.schedule_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Longest Curing Age (Days)'),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
         ],
       ),
       body: _buildBody(),
@@ -188,27 +224,41 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const AppLoadingState(message: 'Loading mixture records...');
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              strokeWidth: 2.8,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+            SizedBox(height: 14),
+            Text(
+              'Loading laboratory records...',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_errorMessage != null) {
-      return AppErrorState(
-        title: 'Unable to load mixture data',
-        details: _errorMessage!,
+      return ErrorStateWidget(
+        message: _errorMessage!,
         onRetry: _loadInitialRecords,
       );
     }
 
     if (_records.isEmpty) {
-      return const AppEmptyState(
+      return const EmptyStateWidget(
         icon: Icons.science_outlined,
-        title: 'No mixture data available',
-        message: 'There are no mixture component records loaded yet.',
+        title: 'No Mixture Data Loaded',
+        message: 'No mixture records found in the laboratory dataset.',
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       itemCount: _records.length + 1,
       itemBuilder: (context, index) {
         if (index < _records.length) {
@@ -216,18 +266,20 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
           return _buildRecordCard(record);
         }
 
-        // Footer / Load More item
+        // Footer / Load More
         if (_hasMore) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Center(
-              child: _isLoadingMore
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton.icon(
-                      onPressed: _loadMoreRecords,
-                      icon: const Icon(Icons.expand_more_rounded),
-                      label: const Text('Load more records'),
-                    ),
+              child: PrimaryButton(
+                label: 'Load More Records',
+                icon: Icons.expand_more_rounded,
+                isOutlined: true,
+                isLoading: _isLoadingMore,
+                width: 220,
+                height: 46,
+                onPressed: _loadMoreRecords,
+              ),
             ),
           );
         }
@@ -236,8 +288,12 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Center(
             child: Text(
-              'Showing all ${_records.length} records loaded',
-              style: Theme.of(context).textTheme.bodyMedium,
+              'All ${_records.length} laboratory test records loaded',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMuted,
+              ),
             ),
           ),
         );
@@ -246,85 +302,128 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
   }
 
   Widget _buildRecordCard(ConcreteMixtureRecord record) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            leading: const IconBadge(icon: Icons.science_rounded),
-            title: Text(
-              _formatRecordTitle(record.id),
-              style: Theme.of(context).textTheme.titleMedium,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primarySubtle,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primaryBorder.withValues(alpha: 0.5),
+              ),
             ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.orangeSoft,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${record.age} days',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoal,
-                      ),
+            child: const Icon(
+              Icons.science_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          title: Text(
+            _formatRecordTitle(record.id),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    '${record.age} Days Cured',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${record.compressiveStrength.toStringAsFixed(2)} MPa',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.orangeDark,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${record.compressiveStrength.toStringAsFixed(2)} MPa',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(color: AppColors.border),
+                  const SizedBox(height: 6),
+                  ...record.components.map(
+                    (comp) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              comp.name,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceMuted,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${comp.value} ${comp.unit}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Divider(),
-                    const SizedBox(height: 6),
-                    ...record.components.map(
-                      (comp) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                comp.name,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                            Text(
-                              '${comp.value} ${comp.unit}',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
