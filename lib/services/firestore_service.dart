@@ -308,7 +308,7 @@ class FirestoreService {
 
     questions.shuffle();
 
-    // The quiz requires 10 questions.
+    // The quiz requires 10 questions.  
     if (questions.length < 10) {
       debugPrint(
         'Only ${questions.length} quiz questions found '
@@ -328,7 +328,6 @@ class FirestoreService {
     debugPrint(
       'Quiz question loading error: $e',
     );
-
     rethrow;
   }
 }
