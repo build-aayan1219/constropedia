@@ -89,9 +89,7 @@ class _SearchPageState extends State<SearchPage> {
     final results = _filteredArticles;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search'),
-      ),
+      appBar: AppBar(title: const Text('Search')),
       body: Column(
         children: [
           Padding(
@@ -128,9 +126,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
             ),
-          Expanded(
-            child: _buildBody(results),
-          ),
+          Expanded(child: _buildBody(results)),
         ],
       ),
     );
@@ -173,9 +169,7 @@ class _SearchPageState extends State<SearchPage> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => ArticlePage(article: article),
-              ),
+              MaterialPageRoute(builder: (_) => ArticlePage(article: article)),
             );
           },
         );
