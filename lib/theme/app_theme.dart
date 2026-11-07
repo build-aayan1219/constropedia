@@ -66,10 +66,7 @@ class AppTheme {
           disabledForegroundColor: Colors.white70,
           elevation: 0,
           minimumSize: const Size.fromHeight(50),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -80,10 +77,7 @@ class AppTheme {
           foregroundColor: AppColors.orangeDark,
           side: const BorderSide(color: AppColors.orange, width: 1.4),
           minimumSize: const Size.fromHeight(50),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -131,9 +125,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.charcoal,
         contentTextStyle: const TextStyle(color: Colors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.orange,
