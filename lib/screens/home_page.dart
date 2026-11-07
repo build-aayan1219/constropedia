@@ -60,7 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
       Article? selected;
       if (articles.isNotEmpty) {
-        final index = DateTime.now().day % articles.length;
+        final now = DateTime.now();
+        // Day of the year (1-366) ensures smooth rotation across all months and days
+        final startOfYear = DateTime(now.year, 1, 1);
+        final dayOfYear = now.difference(startOfYear).inDays;
+        final index = dayOfYear.abs() % articles.length;
         selected = articles[index];
       }
 
@@ -80,11 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/login',
-      (route) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
@@ -101,9 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const BookmarksPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const BookmarksPage()),
               );
             },
             icon: const Icon(Icons.bookmark_outline_rounded),
@@ -147,9 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const SearchPage()),
                   );
                 },
                 decoration: const InputDecoration(
@@ -217,9 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const QuizPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const QuizPage()),
                     );
                   },
                   child: const Padding(
@@ -295,10 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
-              Text(
-                _termError!,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(_termError!, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerLeft,
