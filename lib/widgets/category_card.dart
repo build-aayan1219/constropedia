@@ -8,11 +8,7 @@ class CategoryCard extends StatelessWidget {
   final String title;
   final IconData icon;
 
-  const CategoryCard({
-    super.key,
-    required this.title,
-    required this.icon,
-  });
+  const CategoryCard({super.key, required this.title, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +19,7 @@ class CategoryCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => CategoryPage(
-                categoryName: title,
-              ),
+              builder: (context) => CategoryPage(categoryName: title),
             ),
           );
         },
@@ -47,10 +41,9 @@ class CategoryCard extends StatelessWidget {
                 descriptionForCategory(title),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 12,
-                      height: 1.3,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontSize: 12, height: 1.3),
               ),
             ],
           ),
