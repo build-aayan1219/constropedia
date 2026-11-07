@@ -6,10 +6,7 @@ import '../widgets/app_ui.dart';
 class ComponentDetailPage extends StatelessWidget {
   final MixtureComponentItem component;
 
-  const ComponentDetailPage({
-    super.key,
-    required this.component,
-  });
+  const ComponentDetailPage({super.key, required this.component});
 
   IconData _getComponentIcon(String fieldName) {
     switch (fieldName) {
@@ -39,9 +36,7 @@ class ComponentDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(component.name),
-      ),
+      appBar: AppBar(title: Text(component.name)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
@@ -177,10 +172,7 @@ class ComponentDetailPage extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.muted,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
                 const SizedBox(height: 2),
                 Text(
