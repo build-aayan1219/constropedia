@@ -102,18 +102,14 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            e.message ?? 'Google Sign-In failed (${e.code})',
-          ),
+          content: Text(e.message ?? 'Google Sign-In failed (${e.code})'),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google Sign-In error: $e'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google Sign-In error: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -165,7 +161,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 24),
               GoogleSignInButton(
-                onPressed: (isLoading || isGoogleLoading) ? null : signInWithGoogle,
+                onPressed: (isLoading || isGoogleLoading)
+                    ? null
+                    : signInWithGoogle,
                 isLoading: isGoogleLoading,
                 label: 'Sign in with Google',
               ),
