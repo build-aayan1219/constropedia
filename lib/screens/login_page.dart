@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import '../widgets/app_ui.dart';
+import '../widgets/google_sign_in_button.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,10 +13,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final AuthService _authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
+  bool isGoogleLoading = false;
   bool obscurePassword = true;
 
   Future<void> login() async {
@@ -31,7 +35,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await _authService.signInWithEmailPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
@@ -69,6 +73,51 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         setState(() {
           isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    setState(() {
+      isGoogleLoading = true;
+    });
+
+    try {
+      final credential = await _authService.signInWithGoogle();
+
+      if (!mounted) return;
+
+      if (credential != null && credential.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Welcome, ${credential.user?.displayName ?? 'User'}!',
+            ),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.message ?? 'Google Sign-In failed (${e.code})',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-In error: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isGoogleLoading = false;
         });
       }
     }
@@ -115,6 +164,26 @@ class _LoginPageState extends State<LoginPage> {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
+              GoogleSignInButton(
+                onPressed: (isLoading || isGoogleLoading) ? null : signInWithGoogle,
+                isLoading: isGoogleLoading,
+                label: 'Sign in with Google',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Text(
+                      'or sign in with email',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 20),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -131,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                 obscureText: obscurePassword,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) {
-                  if (!isLoading) {
+                  if (!isLoading && !isGoogleLoading) {
                     login();
                   }
                 },
@@ -159,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
               SizedBox(
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: isLoading ? null : login,
+                  onPressed: (isLoading || isGoogleLoading) ? null : login,
                   child: isLoading
                       ? const SizedBox(
                           height: 22,
