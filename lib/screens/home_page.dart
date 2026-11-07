@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/article.dart';
+import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_ui.dart';
@@ -22,6 +22,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
 
+  final AuthService _authService = AuthService();
+
   String _displayName = '';
   Article? _termOfTheDay;
   bool _loadingTerm = true;
@@ -36,6 +38,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadWelcomeData() async {
     try {
+      final user = _authService.currentUser;
+      if (user?.displayName != null && user!.displayName!.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _displayName = user.displayName!;
+        });
+        return;
+      }
+
       final profile = await _firestoreService.getUserProfile();
       final data = profile.data();
       final name = data?['name']?.toString().trim() ?? '';
@@ -82,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout() async {
-    await FirebaseAuth.instance.signOut();
+    await _authService.signOut();
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
