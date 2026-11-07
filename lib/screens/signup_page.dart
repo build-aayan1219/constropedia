@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import '../widgets/app_ui.dart';
+import '../widgets/google_sign_in_button.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -12,6 +13,7 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
+  final AuthService _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController nameController = TextEditingController();
@@ -21,6 +23,7 @@ class _SignupPageState extends State<SignupPage> {
       TextEditingController();
 
   bool isLoading = false;
+  bool isGoogleLoading = false;
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
 
@@ -34,27 +37,16 @@ class _SignupPageState extends State<SignupPage> {
     });
 
     try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await _authService.signUpWithEmailPassword(
+        name: nameController.text.trim(),
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-        'name': nameController.text.trim(),
-        'email': emailController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully!'),
-        ),
+        const SnackBar(content: Text('Account created successfully!')),
       );
 
       Navigator.pushReplacementNamed(context, '/home');
@@ -73,19 +65,60 @@ class _SignupPageState extends State<SignupPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) {
         setState(() {
           isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> signUpWithGoogle() async {
+    setState(() {
+      isGoogleLoading = true;
+    });
+
+    try {
+      final credential = await _authService.signInWithGoogle();
+
+      if (!mounted) return;
+
+      if (credential != null && credential.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Welcome to Constropedia, ${credential.user?.displayName ?? 'User'}!',
+            ),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Google Sign-Up failed (${e.code})'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google Sign-Up error: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          isGoogleLoading = false;
         });
       }
     }
@@ -103,35 +136,65 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create account'),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Center(child: IconBadge(icon: Icons.construction_rounded)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    tooltip: 'Back',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Center(
+                  child: IconBadge(icon: Icons.person_add_alt_1_rounded),
+                ),
                 const SizedBox(height: 16),
                 Text(
-                  'Join Constropedia',
+                  'Create an account',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Create an account to bookmark terms and track quizzes.',
+                  'Start exploring construction articles and quizzes.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 28),
+                GoogleSignInButton(
+                  onPressed: (isLoading || isGoogleLoading)
+                      ? null
+                      : signUpWithGoogle,
+                  isLoading: isGoogleLoading,
+                  label: 'Sign up with Google',
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Text(
+                        'or sign up with email',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: nameController,
-                  textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.name],
                   decoration: const InputDecoration(
                     labelText: 'Full name',
                     prefixIcon: Icon(Icons.person_outline_rounded),
@@ -139,6 +202,9 @@ class _SignupPageState extends State<SignupPage> {
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your name';
+                    }
+                    if (value.trim().length < 2) {
+                      return 'Name must be at least 2 characters';
                     }
                     return null;
                   },
@@ -148,6 +214,7 @@ class _SignupPageState extends State<SignupPage> {
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.mail_outline_rounded),
@@ -156,8 +223,9 @@ class _SignupPageState extends State<SignupPage> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!value.contains('@')) {
-                      return 'Please enter a valid email';
+                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return 'Please enter a valid email address';
                     }
                     return null;
                   },
@@ -187,7 +255,10 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.length < 6) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a password';
+                    }
+                    if (value.length < 6) {
                       return 'Password must be at least 6 characters';
                     }
                     return null;
@@ -218,6 +289,9 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
                   validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
                     if (value != passwordController.text) {
                       return 'Passwords do not match';
                     }
@@ -228,7 +302,7 @@ class _SignupPageState extends State<SignupPage> {
                 SizedBox(
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : signup,
+                    onPressed: (isLoading || isGoogleLoading) ? null : signup,
                     child: isLoading
                         ? const SizedBox(
                             height: 22,
@@ -251,7 +325,7 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.pushReplacementNamed(context, '/login');
                       },
                       child: const Text('Log in'),
                     ),
