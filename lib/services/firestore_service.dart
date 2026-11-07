@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models/article.dart';
 import '../models/mixture_record.dart';
 import '../models/quiz_question.dart';
+import 'local_quiz_data.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -285,52 +286,44 @@ class FirestoreService {
   // QUIZ QUESTIONS
   // ==================================================
 
-  Future<List<QuizQuestionModel>> fetchQuizQuestions(
-  String category,
-) async {
-  try {
-    final snapshot = await _firestore
-        .collection('quizQuestions')
-        .where(
-          'category',
-          isEqualTo: category,
-        )
-        .get();
+  Future<List<QuizQuestionModel>> fetchQuizQuestions(String category) async {
+    try {
+      final snapshot = await _firestore
+          .collection('quizQuestions')
+          .where('category', isEqualTo: category)
+          .get();
 
-    final questions = snapshot.docs
-        .map(
-          (doc) => QuizQuestionModel.fromMap(
-            doc.id,
-            doc.data(),
-          ),
-        )
-        .toList();
+      List<QuizQuestionModel> questions = snapshot.docs
+          .map((doc) => QuizQuestionModel.fromMap(doc.id, doc.data()))
+          .toList();
 
-    questions.shuffle();
+      // If remote has fewer than 10 questions or is empty, use the verified 50-question local bank
+      if (questions.length < 10) {
+        debugPrint(
+          'Remote Firestore has only ${questions.length} questions for $category. Falling back to local question bank.',
+        );
+        questions = LocalQuizData.getQuestionsByCategory(category);
+      }
 
-    // The quiz requires 10 questions.  
-    if (questions.length < 10) {
+      questions.shuffle();
+
+      return questions.take(10).toList();
+    } on FirebaseException catch (e) {
       debugPrint(
-        'Only ${questions.length} quiz questions found '
-        'for category: $category',
+        'Quiz question Firestore loading notice: ${e.code} - ${e.message}. Using local questions fallback.',
       );
+      final fallback = LocalQuizData.getQuestionsByCategory(category);
+      fallback.shuffle();
+      return fallback.take(10).toList();
+    } catch (e) {
+      debugPrint(
+        'Quiz question loading notice: $e. Using local questions fallback.',
+      );
+      final fallback = LocalQuizData.getQuestionsByCategory(category);
+      fallback.shuffle();
+      return fallback.take(10).toList();
     }
-
-    return questions.take(10).toList();
-  } on FirebaseException catch (e) {
-    debugPrint(
-      'Quiz question loading error: '
-      '${e.code} - ${e.message}',
-    );
-
-    rethrow;
-  } catch (e) {
-    debugPrint(
-      'Quiz question loading error: $e',
-    );
-    rethrow;
   }
-}
 
   // ==================================================
   // QUIZ HISTORY
