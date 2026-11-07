@@ -1,0 +1,13 @@
+{
+  "name": "constropedia-quiz-seeder",
+  "version": "1.0.0",
+  "description": "Seeds quiz questions into Firestore for Constropedia",
+  "main": "seed.js",
+  "scripts": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
+
