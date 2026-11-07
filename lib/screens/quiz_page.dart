@@ -7,9 +7,7 @@ import '../widgets/app_ui.dart';
 import 'quiz_history_page.dart';
 
 class QuizPage extends StatefulWidget {
-  const QuizPage({
-    super.key,
-  });
+  const QuizPage({super.key});
 
   @override
   State<QuizPage> createState() => _QuizPageState();
@@ -40,9 +38,7 @@ class _QuizPageState extends State<QuizPage> {
   bool isLoading = false;
   bool isSavingResult = false;
 
-  Future<void> startQuiz(
-    String category,
-  ) async {
+  Future<void> startQuiz(String category) async {
     setState(() {
       selectedCategory = category;
       isLoading = true;
@@ -56,8 +52,9 @@ class _QuizPageState extends State<QuizPage> {
     });
 
     try {
-      final loadedQuestions =
-          await _firestoreService.fetchQuizQuestions(category);
+      final loadedQuestions = await _firestoreService.fetchQuizQuestions(
+        category,
+      );
 
       if (!mounted) return;
 
@@ -96,22 +93,16 @@ class _QuizPageState extends State<QuizPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Unable to load quiz questions.\n$e',
-          ),
+          content: Text('Unable to load quiz questions.\n$e'),
           duration: const Duration(seconds: 6),
         ),
       );
 
-      debugPrint(
-        'Quiz loading error: $e',
-      );
+      debugPrint('Quiz loading error: $e');
     }
   }
 
-  void selectAnswer(
-    int answerIndex,
-  ) {
+  void selectAnswer(int answerIndex) {
     setState(() {
       selectedAnswer = answerIndex;
     });
@@ -119,13 +110,9 @@ class _QuizPageState extends State<QuizPage> {
 
   Future<void> nextQuestion() async {
     if (selectedAnswer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please select an answer.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select an answer.')));
 
       return;
     }
@@ -166,9 +153,7 @@ class _QuizPageState extends State<QuizPage> {
 
       saved = true;
     } catch (e) {
-      debugPrint(
-        'Error saving quiz result: $e',
-      );
+      debugPrint('Error saving quiz result: $e');
       error = e.toString();
     }
 
@@ -310,9 +295,9 @@ class _QuizPageState extends State<QuizPage> {
           const SizedBox(height: 22),
           Text(
             question.question,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  height: 1.35,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(height: 1.35),
           ),
           const SizedBox(height: 18),
           Expanded(
@@ -332,9 +317,7 @@ class _QuizPageState extends State<QuizPage> {
                           : AppColors.surface,
                       borderRadius: BorderRadius.circular(AppTheme.radius),
                       border: Border.all(
-                        color: isSelected
-                            ? AppColors.orange
-                            : AppColors.border,
+                        color: isSelected ? AppColors.orange : AppColors.border,
                         width: isSelected ? 1.6 : 1,
                       ),
                     ),
@@ -377,7 +360,7 @@ class _QuizPageState extends State<QuizPage> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: isSavingResult ? null : nextQuestion,
+              onPressed: (isSavingResult || quizFinished) ? null : nextQuestion,
               child: isSavingResult
                   ? const SizedBox(
                       height: 22,
@@ -490,9 +473,7 @@ class _QuizPageState extends State<QuizPage> {
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Construction quiz'),
@@ -514,10 +495,10 @@ class _QuizPageState extends State<QuizPage> {
       body: isLoading
           ? const AppLoadingState(message: 'Loading quiz questions...')
           : quizFinished
-              ? buildResult()
-              : questions.isEmpty
-                  ? buildCategorySelection()
-                  : buildQuiz(),
+          ? buildResult()
+          : questions.isEmpty
+          ? buildCategorySelection()
+          : buildQuiz(),
     );
   }
 }
