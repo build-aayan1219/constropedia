@@ -9,10 +9,7 @@ import '../widgets/app_ui.dart';
 class CementMixtureDataPage extends StatefulWidget {
   final String articleId;
 
-  const CementMixtureDataPage({
-    super.key,
-    this.articleId = 'cement',
-  });
+  const CementMixtureDataPage({super.key, this.articleId = 'cement'});
 
   @override
   State<CementMixtureDataPage> createState() => _CementMixtureDataPageState();
@@ -121,7 +118,9 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not load more records. Please check your connection.'),
+          content: Text(
+            'Could not load more records. Please check your connection.',
+          ),
         ),
       );
     }
@@ -129,7 +128,9 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
 
   void _applySortToList(List<ConcreteMixtureRecord> list) {
     if (_sortBy == 'strength_desc') {
-      list.sort((a, b) => b.compressiveStrength.compareTo(a.compressiveStrength));
+      list.sort(
+        (a, b) => b.compressiveStrength.compareTo(a.compressiveStrength),
+      );
     } else if (_sortBy == 'age_desc') {
       list.sort((a, b) => b.age.compareTo(a.age));
     }
@@ -165,10 +166,7 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
             icon: const Icon(Icons.sort_rounded),
             onSelected: _onSortChanged,
             itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'default',
-                child: Text('Default Order'),
-              ),
+              PopupMenuItem(value: 'default', child: Text('Default Order')),
               PopupMenuItem(
                 value: 'strength_desc',
                 child: Text('Highest Strength'),
@@ -252,7 +250,10 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 6,
+            ),
             leading: const IconBadge(icon: Icons.science_rounded),
             title: Text(
               _formatRecordTitle(record.id),
@@ -263,7 +264,10 @@ class _CementMixtureDataPageState extends State<CementMixtureDataPage> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.orangeSoft,
                       borderRadius: BorderRadius.circular(6),
