@@ -10,10 +10,7 @@ import 'component_detail_page.dart';
 class ArticlePage extends StatefulWidget {
   final Article article;
 
-  const ArticlePage({
-    super.key,
-    required this.article,
-  });
+  const ArticlePage({super.key, required this.article});
 
   @override
   State<ArticlePage> createState() => _ArticlePageState();
@@ -118,11 +115,9 @@ class _ArticlePageState extends State<ArticlePage> {
           isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Removed from bookmarks'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Removed from bookmarks')));
       } else {
         await _firestoreService.addBookmark(
           articleId: widget.article.id,
@@ -140,11 +135,9 @@ class _ArticlePageState extends State<ArticlePage> {
           isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Added to bookmarks'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Added to bookmarks')));
       }
     } catch (e) {
       if (!mounted) return;
@@ -154,11 +147,7 @@ class _ArticlePageState extends State<ArticlePage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Something went wrong. Please try again.\n$e',
-          ),
-        ),
+        SnackBar(content: Text('Something went wrong. Please try again.\n$e')),
       );
 
       debugPrint('Bookmark error: $e');
@@ -201,10 +190,7 @@ class _ArticlePageState extends State<ArticlePage> {
   Widget _buildArticleImage() {
     final imageUrl = widget.article.imageUrl;
 
-    Widget placeholder({
-      required IconData icon,
-      required String label,
-    }) {
+    Widget placeholder({required IconData icon, required String label}) {
       return Container(
         width: double.infinity,
         height: 200,
@@ -219,10 +205,7 @@ class _ArticlePageState extends State<ArticlePage> {
             const SizedBox(height: 10),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.muted,
-              ),
+              style: const TextStyle(fontSize: 14, color: AppColors.muted),
             ),
           ],
         ),
@@ -243,34 +226,30 @@ class _ArticlePageState extends State<ArticlePage> {
         width: double.infinity,
         height: 220,
         fit: BoxFit.cover,
-        loadingBuilder: (
-          BuildContext context,
-          Widget child,
-          ImageChunkEvent? loadingProgress,
-        ) {
-          if (loadingProgress == null) {
-            return child;
-          }
+        loadingBuilder:
+            (
+              BuildContext context,
+              Widget child,
+              ImageChunkEvent? loadingProgress,
+            ) {
+              if (loadingProgress == null) {
+                return child;
+              }
 
-          return Container(
-            width: double.infinity,
-            height: 220,
-            color: AppColors.orangeSoft,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        },
-        errorBuilder: (
-          BuildContext context,
-          Object error,
-          StackTrace? stackTrace,
-        ) {
-          return placeholder(
-            icon: Icons.broken_image_outlined,
-            label: 'Unable to load image',
-          );
-        },
+              return Container(
+                width: double.infinity,
+                height: 220,
+                color: AppColors.orangeSoft,
+                child: const Center(child: CircularProgressIndicator()),
+              );
+            },
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) {
+              return placeholder(
+                icon: Icons.broken_image_outlined,
+                label: 'Unable to load image',
+              );
+            },
       ),
     );
   }
@@ -330,9 +309,9 @@ class _ArticlePageState extends State<ArticlePage> {
                   article.content.isNotEmpty
                       ? article.content
                       : 'No content available for this article.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        height: 1.7,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(height: 1.7),
                 ),
               ),
             ),
