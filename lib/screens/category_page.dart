@@ -8,19 +8,14 @@ import 'article_page.dart';
 class CategoryPage extends StatelessWidget {
   final String categoryName;
 
-  const CategoryPage({
-    super.key,
-    required this.categoryName,
-  });
+  const CategoryPage({super.key, required this.categoryName});
 
   @override
   Widget build(BuildContext context) {
     final firestoreService = FirestoreService();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(categoryName),
-      ),
+      appBar: AppBar(title: Text(categoryName)),
       body: FutureBuilder<List<Article>>(
         future: firestoreService.getArticlesByCategory(categoryName),
         builder: (context, snapshot) {
@@ -53,8 +48,7 @@ class CategoryPage extends StatelessWidget {
                     ? AppEmptyState(
                         icon: Icons.menu_book_outlined,
                         title: 'No articles yet',
-                        message:
-                            'There are no articles in $categoryName yet.',
+                        message: 'There are no articles in $categoryName yet.',
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -68,9 +62,7 @@ class CategoryPage extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => ArticlePage(
-                                    article: article,
-                                  ),
+                                  builder: (_) => ArticlePage(article: article),
                                 ),
                               );
                             },
