@@ -21,9 +21,7 @@ class _LoginPageState extends State<LoginPage> {
     if (emailController.text.trim().isEmpty ||
         passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter email and password'),
-        ),
+        const SnackBar(content: Text('Please enter email and password')),
       );
       return;
     }
@@ -58,15 +56,15 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Something went wrong: $e')));
     } finally {
       if (mounted) {
         setState(() {
