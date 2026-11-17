@@ -3,19 +3,14 @@ import '../models/article.dart';
 import '../models/mixture_record.dart';
 import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/custom_app_bar.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/bookmark_button.dart';
+import '../widgets/app_ui.dart';
 import 'cement_mixture_data_page.dart';
 import 'component_detail_page.dart';
 
 class ArticlePage extends StatefulWidget {
   final Article article;
 
-  const ArticlePage({
-    super.key,
-    required this.article,
-  });
+  const ArticlePage({super.key, required this.article});
 
   @override
   State<ArticlePage> createState() => _ArticlePageState();
@@ -25,7 +20,7 @@ class _ArticlePageState extends State<ArticlePage> {
   final FirestoreService _firestoreService = FirestoreService();
 
   bool isBookmarked = false;
-  bool isLoadingBookmark = true;
+  bool isLoading = true;
 
   ConcreteMixtureRecord? _sampleMixtureRecord;
   bool _isLoadingMixture = false;
@@ -54,7 +49,7 @@ class _ArticlePageState extends State<ArticlePage> {
 
     try {
       final sample = await _firestoreService.getSampleMixtureRecord(
-        articleId: widget.article.id.isNotEmpty ? widget.article.id : 'cement',
+        articleId: 'cement',
       );
 
       if (!mounted) return;
@@ -62,22 +57,18 @@ class _ArticlePageState extends State<ArticlePage> {
         _sampleMixtureRecord = sample;
         _isLoadingMixture = false;
         if (sample == null) {
-          _mixtureError = 'Unable to load mixture data. Tap reload to retry.';
+          _mixtureError = 'Unable to load mixture data. Please tap retry.';
         }
       });
     } catch (e) {
       debugPrint('Error loading mixture sample: $e');
       if (!mounted) return;
       setState(() {
-        _mixtureError = 'Unable to load mixture data. Please try again.';
+        _mixtureError = 'Unable to load mixture data. Please try again.\n$e';
         _isLoadingMixture = false;
       });
     }
   }
-
-  // --------------------------------------------------
-  // CHECK BOOKMARK
-  // --------------------------------------------------
 
   Future<void> checkBookmark() async {
     try {
@@ -90,28 +81,24 @@ class _ArticlePageState extends State<ArticlePage> {
 
       setState(() {
         isBookmarked = bookmarked;
-        isLoadingBookmark = false;
+        isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        isLoadingBookmark = false;
+        isLoading = false;
       });
 
       debugPrint('Error checking bookmark: $e');
     }
   }
 
-  // --------------------------------------------------
-  // TOGGLE BOOKMARK
-  // --------------------------------------------------
-
   Future<void> toggleBookmark() async {
-    if (isLoadingBookmark) return;
+    if (isLoading) return;
 
     setState(() {
-      isLoadingBookmark = true;
+      isLoading = true;
     });
 
     try {
@@ -125,22 +112,12 @@ class _ArticlePageState extends State<ArticlePage> {
 
         setState(() {
           isBookmarked = false;
-          isLoadingBookmark = false;
+          isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.bookmark_remove_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text('Removed from bookmarks'),
-              ],
-            ),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Removed from bookmarks')));
       } else {
         await _firestoreService.addBookmark(
           articleId: widget.article.id,
@@ -155,176 +132,124 @@ class _ArticlePageState extends State<ArticlePage> {
 
         setState(() {
           isBookmarked = true;
-          isLoadingBookmark = false;
+          isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.bookmark_added_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text('Article saved to bookmarks!'),
-              ],
-            ),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Added to bookmarks')));
       }
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        isLoadingBookmark = false;
+        isLoading = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Something went wrong. Please try again.'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+        SnackBar(content: Text('Something went wrong. Please try again.\n$e')),
       );
 
       debugPrint('Bookmark error: $e');
     }
   }
 
-  // --------------------------------------------------
-  // KEY POINT TILE
-  // --------------------------------------------------
-
-  Widget _buildPoint(String title, String text) {
+  Widget _buildPoint(String text) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: AppColors.primarySubtle,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primaryBorder.withValues(alpha: 0.5),
-              ),
-            ),
-            child: const Icon(
-              Icons.check_rounded,
-              size: 14,
-              color: AppColors.primary,
-            ),
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 18,
+            color: AppColors.orange,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  text,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.45,
-                  ),
-                ),
-              ],
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: AppColors.charcoal,
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  // --------------------------------------------------
-  // ARTICLE IMAGE
-  // --------------------------------------------------
 
   Widget _buildArticleImage() {
     final imageUrl = widget.article.imageUrl;
-    final hasImage = imageUrl != null && imageUrl.trim().isNotEmpty;
+
+    Widget placeholder({required IconData icon, required String label}) {
+      return Container(
+        width: double.infinity,
+        height: 200,
+        decoration: BoxDecoration(
+          color: AppColors.orangeSoft,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 42, color: AppColors.orangeDark),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 14, color: AppColors.muted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (imageUrl == null || imageUrl.trim().isEmpty) {
+      return placeholder(
+        icon: Icons.apartment_outlined,
+        label: 'No image available',
+      );
+    }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      child: Image.network(
+        imageUrl,
         width: double.infinity,
-        height: 230,
-        decoration: BoxDecoration(
-          color: AppColors.primarySubtle,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: hasImage
-            ? Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: 230,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildImagePlaceholder();
-                },
-              )
-            : _buildImagePlaceholder(),
-      ),
-    );
-  }
+        height: 220,
+        fit: BoxFit.cover,
+        loadingBuilder:
+            (
+              BuildContext context,
+              Widget child,
+              ImageChunkEvent? loadingProgress,
+            ) {
+              if (loadingProgress == null) {
+                return child;
+              }
 
-  Widget _buildImagePlaceholder() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Icon(
-              Icons.construction_rounded,
-              size: 40,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Construction Encyclopedia Image',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
+              return Container(
+                width: double.infinity,
+                height: 220,
+                color: AppColors.orangeSoft,
+                child: const Center(child: CircularProgressIndicator()),
+              );
+            },
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) {
+              return placeholder(
+                icon: Icons.broken_image_outlined,
+                label: 'Unable to load image',
+              );
+            },
       ),
     );
   }
@@ -334,329 +259,155 @@ class _ArticlePageState extends State<ArticlePage> {
     final article = widget.article;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
-        title: article.title,
-        subtitle: article.category,
+      appBar: AppBar(
+        title: const Text('Article'),
         actions: [
-          BookmarkButton(
-            isBookmarked: isBookmarked,
-            isLoading: isLoadingBookmark,
-            onTap: toggleBookmark,
+          IconButton(
+            tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+            onPressed: isLoading ? null : toggleBookmark,
+            icon: Icon(
+              isBookmarked
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+              color: isBookmarked ? AppColors.orange : null,
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 36),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ARTICLE IMAGE HERO
             _buildArticleImage(),
-
             const SizedBox(height: 18),
-
-            // CATEGORY BADGE & TITLE HEADER
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primarySubtle,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.primaryBorder.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        child: Text(
-                          article.category.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryDark,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.schedule_rounded,
-                            size: 14,
-                            color: AppColors.textMuted,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            '3 min read',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    article.title,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                ],
-              ),
+            CategoryChip(label: article.category),
+            const SizedBox(height: 10),
+            Text(
+              article.title,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-
             const SizedBox(height: 20),
-
-            // OVERVIEW & DEFINITION SECTION
-            _buildSectionHeader('Overview & Definition', Icons.info_outline_rounded),
+            const AppSectionHeader(title: 'Definition'),
             const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                article.description.isNotEmpty
-                    ? article.description
-                    : 'A fundamental civil engineering material widely utilized across modern infrastructure and structural projects.',
-                style: const TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
-                  color: AppColors.textPrimary,
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  article.description,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
             ),
-
-            const SizedBox(height: 22),
-
-            // DETAILED CONTENT SECTION
-            _buildSectionHeader('Technical Specifications & Content', Icons.description_outlined),
+            const SizedBox(height: 24),
+            const AppSectionHeader(title: 'Content'),
             const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                article.content.isNotEmpty
-                    ? article.content
-                    : 'Standard construction specifications mandate thorough quality control, appropriate mix ratios, and adherence to regional building codes to achieve structural integrity and long-term durability.',
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.65,
-                  color: AppColors.textSecondary,
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  article.content.isNotEmpty
+                      ? article.content
+                      : 'No content available for this article.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(height: 1.7),
                 ),
               ),
             ),
-
-            const SizedBox(height: 22),
-
-            // KEY POINTS
-            _buildSectionHeader('Key Engineering Points', Icons.lightbulb_outline_rounded),
+            const SizedBox(height: 24),
+            const AppSectionHeader(title: 'Key points'),
+            const SizedBox(height: 12),
+            _buildPoint(
+              'Important construction material used in various applications.',
+            ),
+            _buildPoint(
+              'Its properties and usage depend on the specific construction requirement.',
+            ),
+            _buildPoint(
+              'Proper selection and application can improve construction quality and durability.',
+            ),
             const SizedBox(height: 10),
-            _buildPoint(
-              'Structural Reliability',
-              'Selection and installation methods directly impact load-carrying capacity and lifecycle longevity.',
-            ),
-            _buildPoint(
-              'Code Compliance',
-              'Must adhere to standard building codes, testing protocols, and safety standards.',
-            ),
-            _buildPoint(
-              'Environmental Durability',
-              'Formulated to withstand thermal variations, moisture penetration, and environmental degradation.',
-            ),
-
-            const SizedBox(height: 22),
-
-            // CONCRETE MIXTURE DATA SECTION (FOR CEMENT)
             if (_isCementArticle) ...[
               _buildConcreteMixtureSection(),
-              const SizedBox(height: 22),
+              const SizedBox(height: 24),
             ],
-
-            // BOOKMARK ACTION BUTTON
-            PrimaryButton(
-              label: isBookmarked ? 'Remove from Bookmarks' : 'Bookmark This Article',
-              icon: isBookmarked ? Icons.bookmark_remove_rounded : Icons.bookmark_add_rounded,
-              isOutlined: isBookmarked,
-              isLoading: isLoadingBookmark,
-              onPressed: toggleBookmark,
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: isLoading ? null : toggleBookmark,
+                icon: Icon(
+                  isBookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                ),
+                label: Text(
+                  isBookmarked ? 'Remove bookmark' : 'Bookmark article',
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: AppColors.primarySubtle,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: AppColors.primary),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-            letterSpacing: -0.2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --------------------------------------------------
-  // CONCRETE MIXTURE SECTION
-  // --------------------------------------------------
 
   Widget _buildConcreteMixtureSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildSectionHeader('Concrete Mixture Components', Icons.science_outlined),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.primarySubtle,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Lab Dataset',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Standard component proportions and performance metrics from laboratory concrete mixes.',
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+        const AppSectionHeader(
+          title: 'Concrete mixture components',
+          subtitle:
+              'Standard component proportions and performance metrics from laboratory concrete mixes.',
         ),
         const SizedBox(height: 14),
-
         if (_isLoadingMixture)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Center(
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(24),
               child: Column(
                 children: [
-                  CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                  ),
+                  CircularProgressIndicator(),
                   SizedBox(height: 12),
-                  Text(
-                    'Loading mixture components...',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                  ),
+                  Text('Loading mixture components...'),
                 ],
               ),
             ),
           )
         else if (_mixtureError != null)
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  _mixtureError!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 12),
-                PrimaryButton(
-                  label: 'Retry Loading',
-                  width: 150,
-                  height: 42,
-                  onPressed: _loadSampleMixture,
-                ),
-              ],
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                children: [
+                  Text(
+                    _mixtureError!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _loadSampleMixture,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
             ),
           )
         else if (_sampleMixtureRecord == null)
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Center(
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
               child: Column(
                 children: [
                   const Text('No mixture data available.'),
                   const SizedBox(height: 10),
-                  PrimaryButton(
-                    label: 'Reload',
-                    width: 140,
-                    height: 40,
+                  ElevatedButton.icon(
                     onPressed: _loadSampleMixture,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Reload'),
                   ),
                 ],
               ),
@@ -671,7 +422,7 @@ class _ArticlePageState extends State<ArticlePage> {
               crossAxisCount: 2,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: 1.5,
+              childAspectRatio: 1.45,
             ),
             itemBuilder: (context, idx) {
               final comp = _sampleMixtureRecord!.components[idx];
@@ -679,19 +430,20 @@ class _ArticlePageState extends State<ArticlePage> {
             },
           ),
           const SizedBox(height: 14),
-          PrimaryButton(
-            label: 'View Complete Mixture Dataset',
-            icon: Icons.table_chart_outlined,
-            isOutlined: true,
-            height: 48,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CementMixtureDataPage(),
-                ),
-              );
-            },
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CementMixtureDataPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.table_chart_outlined),
+              label: const Text('View mixture data'),
+            ),
           ),
         ],
       ],
@@ -699,77 +451,59 @@ class _ArticlePageState extends State<ArticlePage> {
   }
 
   Widget _buildComponentCard(MixtureComponentItem comp) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ComponentDetailPage(component: comp),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        comp.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 11,
-                      color: AppColors.textMuted,
-                    ),
-                  ],
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ComponentDetailPage(component: comp),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                comp.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Flexible(
+                    child: Text(
                       comp.value,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.orangeDark,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      comp.unit,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    comp.unit,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

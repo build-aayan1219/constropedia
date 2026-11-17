@@ -7,11 +7,7 @@ class AppSectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
 
-  const AppSectionHeader({
-    super.key,
-    required this.title,
-    this.subtitle,
-  });
+  const AppSectionHeader({super.key, required this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +27,7 @@ class AppSectionHeader extends StatelessWidget {
 class AppLoadingState extends StatelessWidget {
   final String message;
 
-  const AppLoadingState({
-    super.key,
-    this.message = 'Loading...',
-  });
+  const AppLoadingState({super.key, this.message = 'Loading...'});
 
   @override
   Widget build(BuildContext context) {
@@ -46,10 +39,7 @@ class AppLoadingState extends StatelessWidget {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 14),
-            Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text(message, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),
       ),

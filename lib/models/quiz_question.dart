@@ -13,21 +13,27 @@ class QuizQuestionModel {
     required this.options,
     required this.correctAnswer,
     required this.category,
-    required this.difficulty,
-    required this.optionExplanations,
+    this.difficulty = 'Medium',
+    this.optionExplanations = const {},
   });
 
   factory QuizQuestionModel.fromMap(String id, Map<String, dynamic> data) {
+    Map<String, String> parsedExplanations = {};
+    if (data['optionExplanations'] is Map) {
+      final rawMap = data['optionExplanations'] as Map;
+      parsedExplanations = rawMap.map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      );
+    }
+
     return QuizQuestionModel(
       id: id,
       question: data['question']?.toString() ?? '',
       options: List<String>.from(data['options'] ?? const []),
       correctAnswer: data['correctAnswer']?.toString() ?? '',
       category: data['category']?.toString() ?? '',
-      difficulty: data['difficulty']?.toString() ?? 'Easy',
-      optionExplanations: Map<String, String>.from(
-        data['optionExplanations'] ?? const {},
-      ),
+      difficulty: data['difficulty']?.toString() ?? 'Medium',
+      optionExplanations: parsedExplanations,
     );
   }
 
